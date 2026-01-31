@@ -3,6 +3,7 @@ import 'package:aroundme/places.dart';
 import 'package:aroundme/result_filter.dart';
 import 'package:aroundme/settings.dart';
 import 'package:aroundme/settings_screen.dart';
+import 'package:aroundme/text_marker_painter.dart';
 import 'package:flutter/material.dart';
 import 'package:google_map_dynamic_key/google_map_dynamic_key.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -90,26 +91,35 @@ class _AroundMePageState extends State<AroundMePage> {
     return hue % 360; // Ensure it stays within 0-359
   }
 
-  void updateMarkers(Places places) {
-    setState(() {
+  void updateMarkers(Places places) async {
 
     markers.clear();
     for (final place in places.items) {
+      String rating = "${place['rating'] ?? '?'}";
+      int ratingCnt = place['userRatingCount'] ?? 0;
+      //places.minUserRatingCnt, places.maxUserRatingCnt
+
+
+
+      final icon = await createCustomMarkerBitmap(rating, Color.lerp(Colors.blue, Colors.red, places.normRatingCnt(ratingCnt))!);
       markers.add(
         Marker(
           markerId: MarkerId(place['id']),
           position: LatLng(place['location']['latitude'], place['location']['longitude']),
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-            calculateHue(places.minUserRatingCnt, places.maxUserRatingCnt, place['userRatingCount'] ?? 0),
-          ),
+          icon : icon,
+          //icon: BitmapDescriptor.defaultMarkerWithHue(
+          //  calculateHue(places.minUserRatingCnt, places.maxUserRatingCnt, place['userRatingCount'] ?? 0),
+          //),
           //icon: BitmapDescriptor.defaultMarkerWithHue(300),
           infoWindow: InfoWindow(
             title: place['displayName']['text'],
-            snippet: "${place['rating'] ?? '?'} (${place['userRatingCount'] ?? '?'})",
+            snippet: "${rating} ($ratingCnt)",
           ),
         ),
       );
     }
+    setState(() {
+
     });
 
   }

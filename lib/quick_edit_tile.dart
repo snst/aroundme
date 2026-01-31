@@ -1,5 +1,46 @@
 import 'package:flutter/material.dart';
 
+/*
+class FilterWidget extends StatelessWidget {
+  const FilterEditWidget({
+    super.key,
+    required this.title,
+    required this.val,
+    required this.min,
+    required this.max,
+    required this.isInt,
+    required this.onChanged,
+  });
+
+  final String title;
+  final double val;
+  final double min;
+  final double max;
+  final bool isInt;
+  final Function onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          "${title} ${val}",
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+        Slider(
+          value: val,
+          min: min,
+          max: max,
+          onChanged: (value) => onChanged(value),
+        ),
+      ],
+    );
+  }
+}
+
+*/
+
 class QuickEditTile extends StatefulWidget {
   final String title;
   final double value;
@@ -35,29 +76,11 @@ class _QuickEditTileState extends State<QuickEditTile> {
       builder: (context) {
         return StatefulBuilder( // Allows the slider to move inside the dialog
           builder: (context, setDialogState) {
-            String valText = widget.isInt ? tempValue.round().toString() : tempValue.toStringAsFixed(1);
+            //String valText = widget.isInt ? tempValue.round().toString() : tempValue.toStringAsFixed(1);
 
             return AlertDialog(
               title: Text("Edit ${widget.title}"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "${valText}${widget.unit}",
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  Slider(
-                    value: tempValue,
-                    min: widget.min,
-                    max: widget.max,
-                    onChanged: (value) {
-                      setDialogState(() {
-                        tempValue = (value * 10).round() / 10;
-                         } );
-                    },
-                  ),
-                ],
-              ),
+              content: Text("aa"), //FilterWidget(valText: valText, widget: widget, tempValue: tempValue),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
@@ -104,6 +127,44 @@ class _QuickEditTileState extends State<QuickEditTile> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class FilterEditWidget extends StatelessWidget {
+  const FilterEditWidget({
+    super.key,
+    required this.title,
+    required this.val,
+    required this.min,
+    required this.max,
+    required this.isInt,
+    required this.onChanged,
+  });
+
+  final String title;
+  final double val;
+  final double min;
+  final double max;
+  final bool isInt;
+  final Function onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          "${title} ${val}",
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+        Slider(
+          value: val,
+          min: min,
+          max: max,
+          onChanged: (value) => onChanged(value),
+        ),
+      ],
     );
   }
 }
