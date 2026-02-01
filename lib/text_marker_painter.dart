@@ -1,3 +1,4 @@
+// Copyright 2026 Stefan Schmidt
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -40,12 +41,12 @@ class TextMarkerPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-Future<BitmapDescriptor> createCustomMarkerBitmap(String title, Color bg_color) async {
+Future<BitmapDescriptor> createCustomMarkerBitmap(String title, Color bgcolor) async {
   const ui.Size size = ui.Size(100, 100); // Define the canvas size
   final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
   final Canvas canvas = Canvas(pictureRecorder);
 
-  final painter = TextMarkerPainter(title, bg_color);
+  final painter = TextMarkerPainter(title, bgcolor);
   painter.paint(canvas, size);
 
   final ui.Image image = await pictureRecorder.endRecording().toImage(

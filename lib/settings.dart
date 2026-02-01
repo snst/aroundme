@@ -1,8 +1,8 @@
+// Copyright 2026 Stefan Schmidt
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Settings {
-
   static Future<String> getApiKey() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('api_key') ?? "";

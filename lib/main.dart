@@ -1,4 +1,7 @@
+// Copyright 2026 Stefan Schmidt
+import 'package:aroundme/favorite_search_picker.dart';
 import 'package:aroundme/map_search.dart';
+import 'package:aroundme/place_popup.dart';
 import 'package:aroundme/places.dart';
 import 'package:aroundme/result_filter.dart';
 import 'package:aroundme/settings.dart';
@@ -34,7 +37,7 @@ class AroundMeApp extends StatelessWidget {
 }
 
 class AroundMePage extends StatefulWidget {
-  AroundMePage({super.key, required this.title, required String? apiKey}) : _apiKey = apiKey;
+  const AroundMePage({super.key, required this.title, required String? apiKey}) : _apiKey = apiKey;
 
   final String title;
   final String? _apiKey;
@@ -44,7 +47,6 @@ class AroundMePage extends StatefulWidget {
 }
 
 class _AroundMePageState extends State<AroundMePage> {
-  //FilterData filter = FilterData();
   late final MapSearch mapSearch;
   GoogleMapController? _mapController;
   final TextEditingController _searchController = TextEditingController();
@@ -53,7 +55,6 @@ class _AroundMePageState extends State<AroundMePage> {
   Set<Marker> markers = {};
   ResultFilter resultFilter = ResultFilter();
   Places searchResults = Places();
-
 
   @override
   void initState() {
@@ -92,90 +93,137 @@ class _AroundMePageState extends State<AroundMePage> {
   }
 
   void updateMarkers(Places places) async {
-
     markers.clear();
     for (final place in places.items) {
-      String rating = "${place['rating'] ?? '?'}";
-      int ratingCnt = place['userRatingCount'] ?? 0;
-      //places.minUserRatingCnt, places.maxUserRatingCnt
-
-
-
-      final icon = await createCustomMarkerBitmap(rating, Color.lerp(Colors.blue, Colors.red, places.normRatingCnt(ratingCnt))!);
+      final icon = await createCustomMarkerBitmap(
+        "${place.rating}",
+        Color.lerp(Colors.blue, Colors.red, places.normRatingCnt(place.userRatingCnt))!,
+      );
       markers.add(
         Marker(
-          markerId: MarkerId(place['id']),
-          position: LatLng(place['location']['latitude'], place['location']['longitude']),
-          icon : icon,
-          //icon: BitmapDescriptor.defaultMarkerWithHue(
-          //  calculateHue(places.minUserRatingCnt, places.maxUserRatingCnt, place['userRatingCount'] ?? 0),
-          //),
-          //icon: BitmapDescriptor.defaultMarkerWithHue(300),
-          infoWindow: InfoWindow(
-            title: place['displayName']['text'],
-            snippet: "${rating} ($ratingCnt)",
-          ),
+          markerId: MarkerId(place.id),
+          position: place.location,
+          icon: icon,
+          onTap: () {
+            showPlacePopup(context, place);
+          },
         ),
       );
     }
-    setState(() {
-
-    });
-
+    setState(() {});
   }
 
   void clearResults() {
     setState(() {
       mapSearch.clearResults();
+      mapSearch.clearNextPageToken();
       markers.clear();
       resultFilter.filter(mapSearch.places);
-      //filter.updateFilteredPlacesAndMarkers(mapSearch.places);
     });
   }
 
   void onMapMoved() async {
     Settings.setInitialPos(mapCenter!);
     if (_mapController != null) {
-      mapSearch.setMapBounds(await _mapController!.getVisibleRegion());
+      mapSearch.setMapBounds(mapCenter!, await _mapController!.getVisibleRegion());
     }
   }
 
   void onSearchFinished(Places places, bool hasMore) {
-      searchResults = places;
-      updateMarkers(resultFilter.filter(searchResults));
-      if (!hasMore) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('No more results.'),
-            duration: const Duration(seconds: 2), // How long it stays
-            behavior: SnackBarBehavior.floating, // Makes it float above the bottom
-          ),
+    searchResults = places;
+    updateMarkers(resultFilter.filter(searchResults));
+    if (!hasMore) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('No more results.'),
+          duration: const Duration(seconds: 2), // How long it stays
+          behavior: SnackBarBehavior.floating, // Makes it float above the bottom
+        ),
+      );
+    }
+  }
+
+  void showFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          // Allows the slider to move inside the dialog
+          builder: (context, setDialogState) {
+            resultFilter.cntVisible(searchResults);
+            return AlertDialog(
+              title: Text("Results: ${resultFilter.visible} / ${resultFilter.all}"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "Rating: ${resultFilter.rating.toStringAsFixed(1)} (${resultFilter.matchRating})",
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.normal),
+                  ),
+                  Slider(
+                    value: resultFilter.adjustedRating(searchResults.minRating, searchResults.maxRating),
+                    min: searchResults.minRating,
+                    max: searchResults.maxRating,
+                    onChanged: (value) {
+                      setDialogState(() {
+                        resultFilter.rating = value;
+                        resultFilter.cntVisible(searchResults);
+                      });
+                    },
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    "Ratings: ${resultFilter.ratingCnt} (${resultFilter.matchRatingCnt})",
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.normal),
+                  ),
+                  Slider(
+                    value: resultFilter
+                        .adjustedRatingCnt(searchResults.minUserRatingCnt, searchResults.maxUserRatingCnt)
+                        .toDouble(),
+                    min: searchResults.minUserRatingCnt.toDouble(),
+                    max: searchResults.maxUserRatingCnt.toDouble(),
+                    onChanged: (value) {
+                      setDialogState(() {
+                        resultFilter.ratingCnt = value.toInt();
+                        resultFilter.cntVisible(searchResults);
+                      });
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                // TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+                ElevatedButton(
+                  onPressed: () {
+                    setDialogState(() {
+                      resultFilter.rating = searchResults.minRating;
+                      resultFilter.ratingCnt = searchResults.minUserRatingCnt;
+                      resultFilter.cntVisible(searchResults);
+                    });
+                  },
+                  child: const Text("Clear"),
+                ),
+
+                ElevatedButton(
+                  onPressed: () {
+                    updateMarkers(resultFilter.filter(searchResults));
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Filter"),
+                ),
+              ],
+            );
+          },
         );
-      }
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    //if (widget._apiKey==null || widget._apiKey!.isEmpty) return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    //print("Create map: ${filter.currentMapCenter.latitude}, ${filter.currentMapCenter.longitude}");
+    final Color iconColor = Colors.black.withOpacity(0.6);
     return Scaffold(
       resizeToAvoidBottomInset: false,
-
-      /*
-      appBar: AppBar(title: const Text('Map Center Coordinate'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(),
-                ),
-              );
-            },
-          ),
-        ],),*/
       body: Stack(
         children: [
           if (isMapReady)
@@ -183,11 +231,10 @@ class _AroundMePageState extends State<AroundMePage> {
               onMapCreated: (controller) => _mapController = controller,
               initialCameraPosition: CameraPosition(target: mapCenter!, zoom: 12.0),
               markers: markers,
-              padding: const EdgeInsets.only(top: 150),
+              padding: const EdgeInsets.only(top: 350),
               myLocationEnabled: true,
               myLocationButtonEnabled: true,
               onCameraMove: (CameraPosition position) {
-                //filter.clearNextPageToken();
                 mapCenter = position.target;
               },
               onCameraIdle: () {
@@ -196,145 +243,99 @@ class _AroundMePageState extends State<AroundMePage> {
             ),
 
           Positioned(
-            top: 45,
-            left: 20,
-            right: 20,
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search...',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
-                filled: true,
-                fillColor: Colors.grey[100],
-                suffixIcon: _searchController.text.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
+            top: 50,
+            left: 10,
+            right: 10,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Row(
+                  //mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    SizedBox(width: 100),
+                    Expanded(
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Search...',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                          filled: true,
+                          fillColor: Colors.grey[100],
+                          isDense: true,
+                          contentPadding: EdgeInsets.all(8.0),
+                          suffixIcon: _searchController.text.isEmpty
+                              ? null
+                              : IconButton(
+                                  icon: Icon(Icons.clear),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                  },
+                                ),
+                        ),
+                        controller: _searchController,
+                        onSubmitted: (value) {
+                          clearResults();
+                          mapSearch.searchText(_searchController.text);
                         },
                       ),
-              ),
-              controller: _searchController,
-              onSubmitted: (value) {
-                clearResults();
-                mapSearch.search(_searchController.text, true);
-              },
-            ),
-          ),
-
-          Positioned(
-            top: 105,
-            left: 20,
-            right: 20,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-
-              children: [
-                Text(
-                  "# ${markers.length} / ${resultFilter.all}",
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                  ],
                 ),
 
-                IconButton(
-                  icon: Icon(Icons.settings, size: 38),
-                  padding: EdgeInsets.zero,
-                  constraints: BoxConstraints(),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const SettingsScreen(),
-                      ),
-                    );
-
-                  },
+                SizedBox(height: 10),
+                TextButton(
+                  onPressed: () => showFilterDialog(),
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.white.withValues(alpha: 0.9), // Light blue background
+                    foregroundColor: Colors.black, // Text color
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: const BorderSide(width: 1),
+                    ),
+                  ),
+                  child: Text("${markers.length} / ${resultFilter.all}"),
                 ),
+                SizedBox(height: 10),
                 IconButton(
-                  icon: Icon(Icons.filter_alt, size: 38),
-                  padding: EdgeInsets.zero,
-                  constraints: BoxConstraints(),
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) {
-                        return StatefulBuilder( // Allows the slider to move inside the dialog
-                          builder: (context, setDialogState) {
-                            resultFilter.cntVisible(searchResults);
-                            return AlertDialog(
-                              title: Text("Results: ${resultFilter.visible} / ${resultFilter.all}"),
-                              content:
-                              Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  "Rating: ${resultFilter.rating.toStringAsFixed(1)} (${resultFilter.matchRating})",
-                                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.normal),
-                                ),
-                                Slider(
-                                  value: resultFilter.adjustedRating(searchResults.minRating, searchResults.maxRating),
-                                  min: searchResults.minRating,
-                                  max: searchResults.maxRating,
-                                  onChanged: (value) { setDialogState(() {
-                                    resultFilter.rating = value;
-                                    resultFilter.cntVisible(searchResults);
-                                  }); },
-                                ),
-                                SizedBox(height:20),
-                                Text(
-                                  "Ratings: ${resultFilter.ratingCnt} (${resultFilter.matchRatingCnt})",
-                                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.normal),
-                                ),
-                                Slider(
-                                  value: resultFilter.adjustedRatingCnt(searchResults.minUserRatingCnt, searchResults.maxUserRatingCnt).toDouble(),
-                                  min: searchResults.minUserRatingCnt.toDouble(),
-                                  max: searchResults.maxUserRatingCnt.toDouble(),
-                                  onChanged: (value) { setDialogState(() {
-                                    resultFilter.ratingCnt = value.toInt();
-                                    resultFilter.cntVisible(searchResults);
-                                  }); },
-                                ),
-                              ],
-                            ), //FilterWidget(valText: valText, widget: widget, tempValue: tempValue),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text("Cancel"),
-                                ),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    //widget.onChanged(tempValue);
-                                    updateMarkers(resultFilter.filter(searchResults));
-                                    Navigator.pop(context);
-                                  },
-                                  child: const Text("Filter"),
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      },
-                    );
-                  },
-                ),
-                IconButton(
-                  icon: Icon(Icons.delete, size: 38),
+                  icon: Icon(Icons.delete, size: 38, color: iconColor),
                   padding: EdgeInsets.zero,
                   constraints: BoxConstraints(),
                   onPressed: () {
                     clearResults();
                   },
                 ),
+                SizedBox(height: 10),
 
                 IconButton(
-                  icon: Icon(Icons.add_circle, size: 38),
+                  icon: Icon(Icons.add_circle, size: 38, color: iconColor),
                   padding: EdgeInsets.zero,
                   constraints: BoxConstraints(),
                   onPressed: () {
-                    mapSearch.search(_searchController.text, false);
+                    mapSearch.searchNext();
+                  },
+                ),
+
+                SizedBox(height: 10),
+
+                FavoriteSearchPicker(
+                  onSelected: (value) {
+                    clearResults();
+                    mapSearch.searchNearby(value);
                   },
                 ),
               ],
+            ),
+          ),
+
+          Positioned(
+            bottom: 0,
+            left: 0,
+            child: IconButton(
+              icon: Icon(Icons.settings, size: 38, color: iconColor),
+              padding: EdgeInsets.zero,
+              constraints: BoxConstraints(),
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
+              },
             ),
           ),
         ],
