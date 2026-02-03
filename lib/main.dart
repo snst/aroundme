@@ -56,6 +56,7 @@ class _AroundMePageState extends State<AroundMePage> {
   ResultFilter resultFilter = ResultFilter();
   Places searchResults = Places();
   EdgeInsets _mapPadding = const EdgeInsets.only(top: 400);
+  bool _isPlacesListVisible = false;
 
   @override
   void initState() {
@@ -224,50 +225,15 @@ class _AroundMePageState extends State<AroundMePage> {
     );
   }
 
-  void _showPlacesListOverlay() {
-    final screenHeight = MediaQuery.of(context).size.height;
+  void _togglePlacesList() {
     setState(() {
-      _mapPadding = EdgeInsets.only(top: 400, bottom: screenHeight * 0.5);
-    });
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      //scrimColor: Colors.transparent,
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.5,
-          maxChildSize: 0.5,
-          expand: false,
-          builder: (context, scrollController) {
-            return Column(
-              children: [
-                const Icon(Icons.drag_handle),
-                Expanded(
-                  child: ListView.builder(
-                    controller: scrollController,
-                    itemCount: searchResults.items.length,
-                    itemBuilder: (context, index) {
-                      final place = searchResults.items[index];
-                      return ListTile(
-                        title: Text(place.name),
-                        subtitle: Text('${place.rating} (${place.userRatingCnt})'),
-                        onTap: () {
-                          _mapController?.animateCamera(CameraUpdate.newLatLng(place.location));
-                          _mapController?.showMarkerInfoWindow(MarkerId(place.id));
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    ).whenComplete(() {
-      setState(() {
-        _mapPadding = const EdgeInsets.only(top: 400.0);
-      });
+      _isPlacesListVisible = !_isPlacesListVisible;
+      if (_isPlacesListVisible) {
+        final screenHeight = MediaQuery.of(context).size.height;
+        _mapPadding = EdgeInsets.only(top: 400, bottom: screenHeight * 0.5);
+      } else {
+        _mapPadding = const EdgeInsets.only(top: 400);
+      }
     });
   }
 
@@ -374,9 +340,7 @@ class _AroundMePageState extends State<AroundMePage> {
                   icon: Icon(Icons.list, size: 38, color: iconColor),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
-                  onPressed: () {
-                    _showPlacesListOverlay();
-                  },
+                  onPressed: _togglePlacesList,
                 ),
               ],
             ),
@@ -393,6 +357,52 @@ class _AroundMePageState extends State<AroundMePage> {
               },
             ),
           ),
+          if (_isPlacesListVisible)
+            SizedBox.expand(
+              child: DraggableScrollableSheet(
+                initialChildSize: 0.5,
+                minChildSize: 0.1,
+                maxChildSize: 0.5,
+                expand: false,
+                builder: (context, scrollController) {
+                  return Container(
+                    color: Theme.of(context).colorScheme.surface,
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const SizedBox(width: 48), // to balance the close button
+                            const Icon(Icons.drag_handle),
+                            IconButton(
+                              icon: const Icon(Icons.close),
+                              onPressed: _togglePlacesList,
+                            ),
+                          ],
+                        ),
+                        Expanded(
+                          child: ListView.builder(
+                            controller: scrollController,
+                            itemCount: searchResults.items.length,
+                            itemBuilder: (context, index) {
+                              final place = searchResults.items[index];
+                              return ListTile(
+                                title: Text(place.name),
+                                subtitle: Text('${place.rating} (${place.userRatingCnt})'),
+                                onTap: () {
+                                  _mapController?.animateCamera(CameraUpdate.newLatLng(place.location));
+                                  _mapController?.showMarkerInfoWindow(MarkerId(place.id));
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
         ],
       ),
     );
