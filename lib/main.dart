@@ -55,6 +55,7 @@ class _AroundMePageState extends State<AroundMePage> {
   Set<Marker> markers = {};
   ResultFilter resultFilter = ResultFilter();
   Places searchResults = Places();
+  Places filteredSearchResults = Places();
   EdgeInsets _mapPadding = const EdgeInsets.only(top: 400);
   bool _isPlacesListVisible = false;
 
@@ -94,14 +95,14 @@ class _AroundMePageState extends State<AroundMePage> {
     return hue % 360; // Ensure it stays within 0-359
   }
 
-  void updateMarkers(Places places) async {
-    markers.clear();
+  Future<Set<Marker>> _buildMarkers(Places places) async {
+    final newMarkers = <Marker>{};
     for (final place in places.items) {
       final icon = await createCustomMarkerBitmap(
         "${place.rating}",
         Color.lerp(Colors.blue, Colors.red, places.normRatingCnt(place.userRatingCnt))!,
       );
-      markers.add(
+      newMarkers.add(
         Marker(
           markerId: MarkerId(place.id),
           position: place.location,
@@ -116,15 +117,17 @@ class _AroundMePageState extends State<AroundMePage> {
         ),
       );
     }
-    setState(() {});
+    return newMarkers;
   }
 
   void clearResults() {
     setState(() {
+      resultFilter.ratingCnt = 0;
+      resultFilter.rating = 0;
       mapSearch.clearResults();
       mapSearch.clearNextPageToken();
       markers.clear();
-      resultFilter.filter(mapSearch.places);
+      filteredSearchResults = resultFilter.filter(mapSearch.places);
     });
   }
 
@@ -135,9 +138,15 @@ class _AroundMePageState extends State<AroundMePage> {
     }
   }
 
-  void onSearchFinished(Places places, bool hasMore) {
-    searchResults = places;
-    updateMarkers(resultFilter.filter(searchResults));
+  void onSearchFinished(Places places, bool hasMore) async {
+    final filtered = resultFilter.filter(places);
+    final newMarkers = await _buildMarkers(filtered);
+    if (!mounted) return;
+    setState(() {
+      searchResults = places;
+      filteredSearchResults = filtered;
+      markers = newMarkers;
+    });
     if (!hasMore) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -211,8 +220,14 @@ class _AroundMePageState extends State<AroundMePage> {
                 ),
 
                 ElevatedButton(
-                  onPressed: () {
-                    updateMarkers(resultFilter.filter(searchResults));
+                  onPressed: () async {
+                    final newFilteredResults = resultFilter.filter(searchResults);
+                    final newMarkers = await _buildMarkers(newFilteredResults);
+                    if (!mounted) return;
+                    setState(() {
+                      filteredSearchResults = newFilteredResults;
+                      markers = newMarkers;
+                    });
                     Navigator.pop(context);
                   },
                   child: const Text("Filter"),
@@ -383,9 +398,9 @@ class _AroundMePageState extends State<AroundMePage> {
                         Expanded(
                           child: ListView.builder(
                             controller: scrollController,
-                            itemCount: searchResults.items.length,
+                            itemCount: filteredSearchResults.items.length,
                             itemBuilder: (context, index) {
-                              final place = searchResults.items[index];
+                              final place = filteredSearchResults.items[index];
                               return ListTile(
                                 title: Text(place.name),
                                 subtitle: Text('${place.rating} (${place.userRatingCnt})'),

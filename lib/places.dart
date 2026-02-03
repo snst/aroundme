@@ -63,15 +63,15 @@ class Places {
       if (place.userRatingCnt > maxUserRatingCnt) {
         maxUserRatingCnt = place.userRatingCnt;
       }
-      if (minUserRatingCnt == 0 || place.userRatingCnt < minUserRatingCnt) {
-        minUserRatingCnt = place.userRatingCnt;
-      }
+      //if (minUserRatingCnt == 0 || place.userRatingCnt < minUserRatingCnt) {
+      //  minUserRatingCnt = place.userRatingCnt;
+      //}
       if (place.rating > maxRating) {
         maxRating = place.rating;
       }
-      if (minRating == 0 || place.rating < minRating) {
-        minRating = place.rating;
-      }
+      //if (minRating == 0 || place.rating < minRating) {
+      //  minRating = place.rating;
+      //}
       return true;
     }
     return false;
