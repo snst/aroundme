@@ -104,9 +104,13 @@ class _AroundMePageState extends State<AroundMePage> {
           markerId: MarkerId(place.id),
           position: place.location,
           icon: icon,
-          onTap: () {
-            showPlacePopup(context, place);
-          },
+          infoWindow: InfoWindow(
+            title: place.name,
+            snippet: "${place.rating} (${place.userRatingCnt})",
+            onTap: () {
+              showPlacePopup(context, place);
+            },
+          ),
         ),
       );
     }
@@ -134,9 +138,9 @@ class _AroundMePageState extends State<AroundMePage> {
     updateMarkers(resultFilter.filter(searchResults));
     if (!hasMore) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('No more results.'),
-          duration: const Duration(seconds: 2), // How long it stays
+        const SnackBar(
+          content: Text('No more results.'),
+          duration: Duration(seconds: 2), // How long it stays
           behavior: SnackBarBehavior.floating, // Makes it float above the bottom
         ),
       );
@@ -171,7 +175,7 @@ class _AroundMePageState extends State<AroundMePage> {
                       });
                     },
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   Text(
                     "Ratings: ${resultFilter.ratingCnt} (${resultFilter.matchRatingCnt})",
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.normal),
@@ -219,6 +223,43 @@ class _AroundMePageState extends State<AroundMePage> {
     );
   }
 
+  void _showPlacesListOverlay() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          expand: false,
+          builder: (context, scrollController) {
+            return Column(
+              children: [
+                const Icon(Icons.drag_handle),
+                Expanded(
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: searchResults.items.length,
+                    itemBuilder: (context, index) {
+                      final place = searchResults.items[index];
+                      return ListTile(
+                        title: Text(place.name),
+                        subtitle: Text('${place.rating} (${place.userRatingCnt})'),
+                        onTap: () {
+                          _mapController?.animateCamera(CameraUpdate.newLatLng(place.location));
+                          _mapController?.showMarkerInfoWindow(MarkerId(place.id));
+                          Navigator.pop(context);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final Color iconColor = Colors.black.withOpacity(0.6);
@@ -241,7 +282,6 @@ class _AroundMePageState extends State<AroundMePage> {
                 onMapMoved();
               },
             ),
-
           Positioned(
             top: 50,
             left: 10,
@@ -252,7 +292,7 @@ class _AroundMePageState extends State<AroundMePage> {
                 Row(
                   //mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    SizedBox(width: 100),
+                    const SizedBox(width: 100),
                     Expanded(
                       child: TextField(
                         decoration: InputDecoration(
@@ -261,11 +301,11 @@ class _AroundMePageState extends State<AroundMePage> {
                           filled: true,
                           fillColor: Colors.grey[100],
                           isDense: true,
-                          contentPadding: EdgeInsets.all(8.0),
+                          contentPadding: const EdgeInsets.all(8.0),
                           suffixIcon: _searchController.text.isEmpty
                               ? null
                               : IconButton(
-                                  icon: Icon(Icons.clear),
+                                  icon: const Icon(Icons.clear),
                                   onPressed: () {
                                     _searchController.clear();
                                   },
@@ -280,12 +320,11 @@ class _AroundMePageState extends State<AroundMePage> {
                     ),
                   ],
                 ),
-
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 TextButton(
                   onPressed: () => showFilterDialog(),
                   style: TextButton.styleFrom(
-                    backgroundColor: Colors.white.withValues(alpha: 0.9), // Light blue background
+                    backgroundColor: Colors.white.withAlpha(230), // Light blue background
                     foregroundColor: Colors.black, // Text color
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -294,54 +333,50 @@ class _AroundMePageState extends State<AroundMePage> {
                   ),
                   child: Text("${markers.length} / ${resultFilter.all}"),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 IconButton(
                   icon: Icon(Icons.delete, size: 38, color: iconColor),
                   padding: EdgeInsets.zero,
-                  constraints: BoxConstraints(),
+                  constraints: const BoxConstraints(),
                   onPressed: () {
                     clearResults();
                   },
                 ),
-                SizedBox(height: 10),
-
+                const SizedBox(height: 10),
                 IconButton(
                   icon: Icon(Icons.add_circle, size: 38, color: iconColor),
                   padding: EdgeInsets.zero,
-                  constraints: BoxConstraints(),
+                  constraints: const BoxConstraints(),
                   onPressed: () {
                     mapSearch.searchNext();
                   },
                 ),
-
-                SizedBox(height: 10),
-
+                const SizedBox(height: 10),
                 FavoriteSearchPicker(
                   onSelected: (value) {
                     clearResults();
                     mapSearch.searchNearby(value);
                   },
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 IconButton(
                   icon: Icon(Icons.list, size: 38, color: iconColor),
                   padding: EdgeInsets.zero,
-                  constraints: BoxConstraints(),
+                  constraints: const BoxConstraints(),
                   onPressed: () {
-                    //mapSearch.searchNext();
+                    _showPlacesListOverlay();
                   },
                 ),
               ],
             ),
           ),
-
           Positioned(
             bottom: 0,
             left: 0,
             child: IconButton(
               icon: Icon(Icons.settings, size: 38, color: iconColor),
               padding: EdgeInsets.zero,
-              constraints: BoxConstraints(),
+              constraints: const BoxConstraints(),
               onPressed: () {
                 Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
               },
