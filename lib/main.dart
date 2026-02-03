@@ -229,6 +229,8 @@ class _AroundMePageState extends State<AroundMePage> {
       isScrollControlled: true,
       builder: (context) {
         return DraggableScrollableSheet(
+          initialChildSize: 0.5,
+          maxChildSize: 0.5,
           expand: false,
           builder: (context, scrollController) {
             return Column(
@@ -246,7 +248,6 @@ class _AroundMePageState extends State<AroundMePage> {
                         onTap: () {
                           _mapController?.animateCamera(CameraUpdate.newLatLng(place.location));
                           _mapController?.showMarkerInfoWindow(MarkerId(place.id));
-                          Navigator.pop(context);
                         },
                       );
                     },
