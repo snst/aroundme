@@ -55,6 +55,7 @@ class _AroundMePageState extends State<AroundMePage> {
   Set<Marker> markers = {};
   ResultFilter resultFilter = ResultFilter();
   Places searchResults = Places();
+  EdgeInsets _mapPadding = const EdgeInsets.only(top: 400);
 
   @override
   void initState() {
@@ -224,9 +225,14 @@ class _AroundMePageState extends State<AroundMePage> {
   }
 
   void _showPlacesListOverlay() {
+    final screenHeight = MediaQuery.of(context).size.height;
+    setState(() {
+      _mapPadding = EdgeInsets.only(top: 400, bottom: screenHeight * 0.5);
+    });
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      //scrimColor: Colors.transparent,
       builder: (context) {
         return DraggableScrollableSheet(
           initialChildSize: 0.5,
@@ -258,7 +264,11 @@ class _AroundMePageState extends State<AroundMePage> {
           },
         );
       },
-    );
+    ).whenComplete(() {
+      setState(() {
+        _mapPadding = const EdgeInsets.only(top: 400.0);
+      });
+    });
   }
 
   @override
@@ -273,7 +283,7 @@ class _AroundMePageState extends State<AroundMePage> {
               onMapCreated: (controller) => _mapController = controller,
               initialCameraPosition: CameraPosition(target: mapCenter!, zoom: 12.0),
               markers: markers,
-              padding: const EdgeInsets.only(top: 400),
+              padding: _mapPadding,
               myLocationEnabled: true,
               myLocationButtonEnabled: true,
               onCameraMove: (CameraPosition position) {
