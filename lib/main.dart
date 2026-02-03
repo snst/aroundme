@@ -231,7 +231,7 @@ class _AroundMePageState extends State<AroundMePage> {
               onMapCreated: (controller) => _mapController = controller,
               initialCameraPosition: CameraPosition(target: mapCenter!, zoom: 12.0),
               markers: markers,
-              padding: const EdgeInsets.only(top: 350),
+              padding: const EdgeInsets.only(top: 400),
               myLocationEnabled: true,
               myLocationButtonEnabled: true,
               onCameraMove: (CameraPosition position) {
@@ -320,6 +320,15 @@ class _AroundMePageState extends State<AroundMePage> {
                   onSelected: (value) {
                     clearResults();
                     mapSearch.searchNearby(value);
+                  },
+                ),
+                SizedBox(height: 10),
+                IconButton(
+                  icon: Icon(Icons.list, size: 38, color: iconColor),
+                  padding: EdgeInsets.zero,
+                  constraints: BoxConstraints(),
+                  onPressed: () {
+                    //mapSearch.searchNext();
                   },
                 ),
               ],
