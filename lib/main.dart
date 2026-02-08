@@ -252,6 +252,11 @@ class _AroundMePageState extends State<AroundMePage> {
     });
   }
 
+  void _filterAndSortPlaces(SortPlaces sortby) {
+    resultFilter.sortBy = sortby;
+    filteredSearchResults = resultFilter.filter(mapSearch.places);
+  }
+
   @override
   Widget build(BuildContext context) {
     final Color iconColor = Colors.black.withOpacity(0.6);
@@ -384,26 +389,67 @@ class _AroundMePageState extends State<AroundMePage> {
                     color: Theme.of(context).colorScheme.surface,
                     child: Column(
                       children: [
+                        // Header with close button and sort buttons
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            const SizedBox(width: 48), // to balance the close button
-                            const Icon(Icons.drag_handle),
                             IconButton(
-                              icon: const Icon(Icons.close),
-                              onPressed: _togglePlacesList,
+                              icon: const Icon(Icons.star),
+                              onPressed: () {
+                                setState(() {
+                                  _filterAndSortPlaces(SortPlaces.rating);
+                                });
+                              },
+                              color: resultFilter.sortBy == SortPlaces.rating ? Colors.orange : Colors.grey,
+                            ),
+                            //const Icon(Icons.drag_handle),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.people),
+                                  onPressed: () {
+                                    setState(() {
+                                      _filterAndSortPlaces(SortPlaces.ratingCnt);
+                                    });
+                                  },
+                                  color: resultFilter.sortBy == SortPlaces.ratingCnt ? Colors.orange : Colors.grey,
+                                ),
+                                SizedBox(width:10),
+                                IconButton(icon: const Icon(Icons.close), onPressed: _togglePlacesList),
+                              ],
                             ),
                           ],
                         ),
+                        // Scrollable list
                         Expanded(
                           child: ListView.builder(
                             controller: scrollController,
                             itemCount: filteredSearchResults.items.length,
                             itemBuilder: (context, index) {
                               final place = filteredSearchResults.items[index];
-                              return ListTile(
+                                return ListTile(
                                 title: Text(place.name),
                                 subtitle: Text('${place.rating} (${place.userRatingCnt})'),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.info),
+                                    onPressed: () {
+                                    launchURL(place.gmPlace);
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.star),
+                                    //padding: EdgeInsets.zero,
+                                    //constraints: const BoxConstraints(),
+                                    onPressed: () {
+                                    launchURL(place.gmReviews);
+                                    },
+                                  ),
+                                  ],
+                                ),
                                 onTap: () {
                                   _mapController?.animateCamera(CameraUpdate.newLatLng(place.location));
                                   _mapController?.showMarkerInfoWindow(MarkerId(place.id));

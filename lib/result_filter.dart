@@ -1,6 +1,11 @@
 // Copyright 2026 Stefan Schmidt
 import 'package:aroundme/places.dart';
 
+enum SortPlaces {
+  rating,
+  ratingCnt,
+}
+
 class ResultFilter {
   double rating = 0;
   int ratingCnt = 0;
@@ -9,6 +14,8 @@ class ResultFilter {
   int matchRatingCnt = 0;
   int visible = 0;
   int all = 0;
+  SortPlaces sortBy = SortPlaces.ratingCnt;
+
 
   double adjustedRating(double minVal, double maxVal) {
     if (rating > maxVal) rating = maxVal;
@@ -45,6 +52,11 @@ class ResultFilter {
       if (place.rating >= rating && place.userRatingCnt >= ratingCnt) {
         filteredPlaces.add(place);
       }
+    }
+    if (sortBy == SortPlaces.ratingCnt) {
+      filteredPlaces.items.sort((a, b) => b.userRatingCnt.compareTo(a.userRatingCnt));
+    } else if (sortBy == SortPlaces.rating) {
+      filteredPlaces.items.sort((a, b) => b.rating.compareTo(a.rating));
     }
     return filteredPlaces;
   }

@@ -1,5 +1,16 @@
 // Copyright 2026 Stefan Schmidt
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:url_launcher/url_launcher.dart'; // You'll need this package
+
+
+// Helper to launch URLs
+Future<void> launchURL(String url) async {
+  final Uri uri = Uri.parse(url);
+  if (!await launchUrl(uri)) {
+    throw Exception('Could not launch $url');
+  }
+}
+
 
 class Place {
   Place({
@@ -80,5 +91,9 @@ class Places {
   void clear() {
     items.clear();
     placesIds.clear();
+    minUserRatingCnt = 0;
+    maxUserRatingCnt = 0;
+    minRating = 0;
+    maxRating = 0;
   }
 }

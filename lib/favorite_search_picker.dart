@@ -92,6 +92,8 @@ class _FavoriteSearchPickerState extends State<FavoriteSearchPicker> {
   Widget build(BuildContext context) {
     return IconButton(
       icon: buttonIcon,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
       tooltip: 'Search Favorites',
       onPressed: () => _showFavoriteDialog(context),
     );

@@ -2,7 +2,6 @@
 import 'package:aroundme/places.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // For Clipboard
-import 'package:url_launcher/url_launcher.dart'; // You'll need this package
 
 void showPlacePopup(BuildContext context, Place place) {
   showDialog(
@@ -36,11 +35,11 @@ void showPlacePopup(BuildContext context, Place place) {
                 _buildActionButton(
                   icon: Icons.directions,
                   label: "Navigation",
-                  onTap: () => _launchURL(place.gmDirections),
+                  onTap: () => launchURL(place.gmDirections),
                 ),
 
-                _buildActionButton(icon: Icons.rate_review, label: "Reviews", onTap: () => _launchURL(place.gmReviews)),
-                _buildActionButton(icon: Icons.rate_review, label: "Place", onTap: () => _launchURL(place.gmPlace)),
+                _buildActionButton(icon: Icons.star, label: "Reviews", onTap: () => launchURL(place.gmReviews)),
+                _buildActionButton(icon: Icons.info, label: "Place", onTap: () => launchURL(place.gmPlace)),
               ],
             ),
           ],
@@ -53,12 +52,4 @@ void showPlacePopup(BuildContext context, Place place) {
 // Helper to build small action chips/buttons
 Widget _buildActionButton({required IconData icon, required String label, required VoidCallback onTap}) {
   return ActionChip(avatar: Icon(icon, size: 16), label: Text(label), onPressed: onTap);
-}
-
-// Helper to launch URLs
-Future<void> _launchURL(String url) async {
-  final Uri uri = Uri.parse(url);
-  if (!await launchUrl(uri)) {
-    throw Exception('Could not launch $url');
-  }
 }
