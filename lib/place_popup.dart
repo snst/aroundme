@@ -3,48 +3,63 @@ import 'package:aroundme/places.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // For Clipboard
 
-void showPlacePopup(BuildContext context, Place place) {
+void showPlacePopup(BuildContext context, Place place, Function onToggleFavorite) {
   showDialog(
     context: context,
     builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text(place.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min, //crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Rating Row
-            Row(
+      return StatefulBuilder(
+        // Allows the slider to move inside the dialog
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Text(place.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min, //crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.star, color: Colors.amber, size: 20),
-                const SizedBox(width: 4),
-                Text("${place.rating} (${place.userRatingCnt} reviews)", style: const TextStyle(fontSize: 16)),
-              ],
-            ),
-            const Divider(height: 24), // Actions Section
-            Column(
-              spacing: 8,
-              children: [
-                _buildActionButton(
-                  icon: Icons.copy,
-                  label: "Coordinates",
-                  onTap: () {
-                    Clipboard.setData(ClipboardData(text: "${place.location.latitude}, ${place.location.longitude}"));
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Location copied!")));
-                  },
+                // Rating Row
+                Row(
+                  children: [
+                    const Icon(Icons.star, color: Colors.amber, size: 20),
+                    const SizedBox(width: 4),
+                    Text("${place.rating} (${place.userRatingCnt} reviews)", style: const TextStyle(fontSize: 16)),
+                    IconButton(
+                      icon: const Icon(Icons.heart_broken),
+                      color: place.isFavorite ? Colors.red : null,
+                      onPressed: () {
+                        setDialogState(() {
+                          onToggleFavorite(place);
+                        });
+                      },
+                    ),
+                  ],
                 ),
-                _buildActionButton(
-                  icon: Icons.directions,
-                  label: "Navigation",
-                  onTap: () => launchURL(place.gmDirections),
-                ),
+                const Divider(height: 24), // Actions Section
+                Column(
+                  spacing: 8,
+                  children: [
+                    _buildActionButton(
+                      icon: Icons.copy,
+                      label: "Coordinates",
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(
+                            text: "${place.location.latitude}, ${place.location.longitude}"));
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Location copied!")));
+                      },
+                    ),
+                    _buildActionButton(
+                      icon: Icons.directions,
+                      label: "Navigation",
+                      onTap: () => launchURL(place.gmDirections),
+                    ),
 
-                _buildActionButton(icon: Icons.star, label: "Reviews", onTap: () => launchURL(place.gmReviews)),
-                _buildActionButton(icon: Icons.info, label: "Place", onTap: () => launchURL(place.gmPlace)),
+                    _buildActionButton(icon: Icons.star, label: "Reviews", onTap: () => launchURL(place.gmReviews)),
+                    _buildActionButton(icon: Icons.info, label: "Place", onTap: () => launchURL(place.gmPlace)),
+                  ],
+                ),
               ],
             ),
-          ],
-        ),
-      );
+          );
+        }
+        );
     },
   );
 }

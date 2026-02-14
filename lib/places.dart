@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart'; // You'll need this package
 
 // Helper to launch URLs
 Future<void> launchURL(String url) async {
+  if (url.isEmpty) return;
   final Uri uri = Uri.parse(url);
   if (!await launchUrl(uri)) {
     throw Exception('Could not launch $url');
@@ -50,6 +51,7 @@ class Place {
   late String gmPlace;
   late String gmReviews;
   late String gmPhotos;
+  bool isFavorite = false;
 }
 
 class Places {

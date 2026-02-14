@@ -1,3 +1,4 @@
+import 'package:aroundme/StoredPlace.dart';
 import 'package:aroundme/places.dart';
 import 'package:aroundme/result_filter.dart';
 
@@ -6,6 +7,7 @@ class AppData
   ResultFilter resultFilter = ResultFilter();
   Places searchResults = Places();
   Places filteredSearchResults = Places();
+  PlaceStorage placeStorage = PlaceStorage();
 
   void clear()
   {
@@ -21,6 +23,13 @@ class AppData
 
   void onSearchFinished(Places places) {
     searchResults = places;
+
+    for(var place in places.items) {
+      if(placeStorage.contains(place.id)) {
+        place.isFavorite = true;
+      }
+    }
+
     updateFilteredSearchResults();
   }
 

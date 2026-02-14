@@ -14,6 +14,8 @@ import 'package:google_map_dynamic_key/google_map_dynamic_key.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import 'StoredPlace.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final String apiKey = await Settings.getApiKey();
@@ -59,6 +61,7 @@ class _AroundMePageState extends State<AroundMePage> {
   bool _isPlacesListVisible = false;
   Set<Marker> markers = {};
 
+
   @override
   void initState() {
     super.initState();
@@ -85,9 +88,10 @@ class _AroundMePageState extends State<AroundMePage> {
   Future<Set<Marker>> _buildMarkers(Places places) async {
     final newMarkers = <Marker>{};
     for (final place in places.items) {
+      Color color = place.isFavorite ? Colors.green : Color.lerp(Colors.blue, Colors.red, places.normRatingCnt(place.userRatingCnt))!;
       final icon = await createCustomMarkerBitmap(
         "${place.rating}",
-        Color.lerp(Colors.blue, Colors.red, places.normRatingCnt(place.userRatingCnt))!,
+        color,
       );
       newMarkers.add(
         Marker(
@@ -98,7 +102,7 @@ class _AroundMePageState extends State<AroundMePage> {
             title: place.name,
             snippet: "${place.rating} (${place.userRatingCnt})",
             onTap: () {
-              showPlacePopup(context, place);
+              showPlacePopup(context, place, toggleFavorite);
             },
           ),
         ),
@@ -155,6 +159,17 @@ class _AroundMePageState extends State<AroundMePage> {
         _mapPadding = const EdgeInsets.only(top: 400);
       }
     });
+  }
+
+  void toggleFavorite(Place place) {
+    place.isFavorite = !place.isFavorite;
+    if (place.isFavorite) {
+      data.placeStorage.add(place);
+    } else {
+      data.placeStorage.remove(place.id);
+    }
+
+    updateMarkers(data.filteredSearchResults);
   }
 
   @override
@@ -277,7 +292,7 @@ class _AroundMePageState extends State<AroundMePage> {
             ),
           ),
           if (_isPlacesListVisible)
-            PlaceListWidget(data: data, mapController: _mapController, onClosePressed: _togglePlacesList)
+            PlaceListWidget(data: data, mapController: _mapController, onClosePressed: _togglePlacesList, onToggleFavorite: toggleFavorite)
         ],
       ),
     );
