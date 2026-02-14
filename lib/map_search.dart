@@ -63,8 +63,6 @@ class MapSearch {
     if (nextPageToken.isNotEmpty) {
       body["pageToken"] = nextPageToken;
     }
-    //print("search token: $nextPageToken");
-    //print(body);
 
     if ((apiKey ?? "").isNotEmpty) {
       try {
@@ -78,7 +76,6 @@ class MapSearch {
           List<dynamic> newPlaces = data['places'] ?? [];
           nextPageToken = data['nextPageToken'] ?? "";
 
-          //print("got token: ${nextPageToken}");
           for (var place in newPlaces) {
             places.add(Place.fromJson((place)));
           }

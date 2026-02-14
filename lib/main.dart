@@ -1,9 +1,11 @@
 // Copyright 2026 Stefan Schmidt
+import 'package:aroundme/app_data.dart';
 import 'package:aroundme/favorite_search_picker.dart';
 import 'package:aroundme/map_search.dart';
 import 'package:aroundme/place_popup.dart';
 import 'package:aroundme/places.dart';
 import 'package:aroundme/result_filter.dart';
+import 'package:aroundme/result_filter_dialog.dart';
 import 'package:aroundme/settings.dart';
 import 'package:aroundme/settings_screen.dart';
 import 'package:aroundme/text_marker_painter.dart';
@@ -52,12 +54,10 @@ class _AroundMePageState extends State<AroundMePage> {
   final TextEditingController _searchController = TextEditingController();
   LatLng? mapCenter;
   bool isMapReady = false;
-  Set<Marker> markers = {};
-  ResultFilter resultFilter = ResultFilter();
-  Places searchResults = Places();
-  Places filteredSearchResults = Places();
+  AppData data = AppData();
   EdgeInsets _mapPadding = const EdgeInsets.only(top: 400);
   bool _isPlacesListVisible = false;
+  Set<Marker> markers = {};
 
   @override
   void initState() {
@@ -80,19 +80,6 @@ class _AroundMePageState extends State<AroundMePage> {
     if (status.isDenied) {
       // Handle the case where the user denies the permission.
     }
-  }
-
-  double calculateHue(int minCnt, int maxCnt, int cnt) {
-    double startHue = 240.0; // Blue
-    double endHue = 360.0; // Red (360 is the same as 0)
-
-    // Linearly interpolate between Blue and Red
-    double div = (maxCnt - minCnt - 1);
-    if (div == 0) {
-      return 360;
-    }
-    double hue = startHue + (endHue - startHue) * ((cnt - minCnt) / div);
-    return hue % 360; // Ensure it stays within 0-359
   }
 
   Future<Set<Marker>> _buildMarkers(Places places) async {
@@ -122,12 +109,10 @@ class _AroundMePageState extends State<AroundMePage> {
 
   void clearResults() {
     setState(() {
-      resultFilter.ratingCnt = 0;
-      resultFilter.rating = 0;
       mapSearch.clearResults();
       mapSearch.clearNextPageToken();
       markers.clear();
-      filteredSearchResults = resultFilter.filter(mapSearch.places);
+      data.clear();
     });
   }
 
@@ -138,15 +123,17 @@ class _AroundMePageState extends State<AroundMePage> {
     }
   }
 
-  void onSearchFinished(Places places, bool hasMore) async {
-    final filtered = resultFilter.filter(places);
-    final newMarkers = await _buildMarkers(filtered);
+  void updateMarkers(Places places) async {
+    final newMarkers = await _buildMarkers(places);
     if (!mounted) return;
     setState(() {
-      searchResults = places;
-      filteredSearchResults = filtered;
       markers = newMarkers;
     });
+  }
+
+  void onSearchFinished(Places places, bool hasMore) async {
+    data.onSearchFinished(places);
+    updateMarkers(data.filteredSearchResults);
     if (!hasMore) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -156,88 +143,6 @@ class _AroundMePageState extends State<AroundMePage> {
         ),
       );
     }
-  }
-
-  void showFilterDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          // Allows the slider to move inside the dialog
-          builder: (context, setDialogState) {
-            resultFilter.cntVisible(searchResults);
-            return AlertDialog(
-              title: Text("Results: ${resultFilter.visible} / ${resultFilter.all}"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "Rating: ${resultFilter.rating.toStringAsFixed(1)} (${resultFilter.matchRating})",
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.normal),
-                  ),
-                  Slider(
-                    value: resultFilter.adjustedRating(searchResults.minRating, searchResults.maxRating),
-                    min: searchResults.minRating,
-                    max: searchResults.maxRating,
-                    onChanged: (value) {
-                      setDialogState(() {
-                        resultFilter.rating = value;
-                        resultFilter.cntVisible(searchResults);
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    "Ratings: ${resultFilter.ratingCnt} (${resultFilter.matchRatingCnt})",
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.normal),
-                  ),
-                  Slider(
-                    value: resultFilter
-                        .adjustedRatingCnt(searchResults.minUserRatingCnt, searchResults.maxUserRatingCnt)
-                        .toDouble(),
-                    min: searchResults.minUserRatingCnt.toDouble(),
-                    max: searchResults.maxUserRatingCnt.toDouble(),
-                    onChanged: (value) {
-                      setDialogState(() {
-                        resultFilter.ratingCnt = value.toInt();
-                        resultFilter.cntVisible(searchResults);
-                      });
-                    },
-                  ),
-                ],
-              ),
-              actions: [
-                // TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-                ElevatedButton(
-                  onPressed: () {
-                    setDialogState(() {
-                      resultFilter.rating = searchResults.minRating;
-                      resultFilter.ratingCnt = searchResults.minUserRatingCnt;
-                      resultFilter.cntVisible(searchResults);
-                    });
-                  },
-                  child: const Text("Clear"),
-                ),
-
-                ElevatedButton(
-                  onPressed: () async {
-                    final newFilteredResults = resultFilter.filter(searchResults);
-                    final newMarkers = await _buildMarkers(newFilteredResults);
-                    if (!mounted) return;
-                    setState(() {
-                      filteredSearchResults = newFilteredResults;
-                      markers = newMarkers;
-                    });
-                    Navigator.pop(context);
-                  },
-                  child: const Text("Filter"),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
   }
 
   void _togglePlacesList() {
@@ -250,11 +155,6 @@ class _AroundMePageState extends State<AroundMePage> {
         _mapPadding = const EdgeInsets.only(top: 400);
       }
     });
-  }
-
-  void _filterAndSortPlaces(SortPlaces sortby) {
-    resultFilter.sortBy = sortby;
-    filteredSearchResults = resultFilter.filter(mapSearch.places);
   }
 
   @override
@@ -319,7 +219,7 @@ class _AroundMePageState extends State<AroundMePage> {
                 ),
                 const SizedBox(height: 10),
                 TextButton(
-                  onPressed: () => showFilterDialog(),
+                  onPressed: () => showFilterDialog(context, data, updateMarkers),
                   style: TextButton.styleFrom(
                     backgroundColor: Colors.white.withAlpha(230), // Light blue background
                     foregroundColor: Colors.black, // Text color
@@ -328,7 +228,7 @@ class _AroundMePageState extends State<AroundMePage> {
                       side: const BorderSide(width: 1),
                     ),
                   ),
-                  child: Text("${markers.length} / ${resultFilter.all}"),
+                  child: Text("${markers.length} / ${data.resultFilter.all}"),
                 ),
                 const SizedBox(height: 10),
                 IconButton(
@@ -397,10 +297,10 @@ class _AroundMePageState extends State<AroundMePage> {
                               icon: const Icon(Icons.star),
                               onPressed: () {
                                 setState(() {
-                                  _filterAndSortPlaces(SortPlaces.rating);
+                                  data.filterAndSortPlaces(SortPlaces.rating);
                                 });
                               },
-                              color: resultFilter.sortBy == SortPlaces.rating ? Colors.orange : Colors.grey,
+                              color: data.resultFilter.sortBy == SortPlaces.rating ? Colors.orange : Colors.grey,
                             ),
                             //const Icon(Icons.drag_handle),
                             Row(
@@ -410,10 +310,10 @@ class _AroundMePageState extends State<AroundMePage> {
                                   icon: const Icon(Icons.people),
                                   onPressed: () {
                                     setState(() {
-                                      _filterAndSortPlaces(SortPlaces.ratingCnt);
+                                      data.filterAndSortPlaces(SortPlaces.ratingCnt);
                                     });
                                   },
-                                  color: resultFilter.sortBy == SortPlaces.ratingCnt ? Colors.orange : Colors.grey,
+                                  color: data.resultFilter.sortBy == SortPlaces.ratingCnt ? Colors.orange : Colors.grey,
                                 ),
                                 SizedBox(width:10),
                                 IconButton(icon: const Icon(Icons.close), onPressed: _togglePlacesList),
@@ -425,9 +325,9 @@ class _AroundMePageState extends State<AroundMePage> {
                         Expanded(
                           child: ListView.builder(
                             controller: scrollController,
-                            itemCount: filteredSearchResults.items.length,
+                            itemCount: data.filteredSearchResults.items.length,
                             itemBuilder: (context, index) {
-                              final place = filteredSearchResults.items[index];
+                              final place = data.filteredSearchResults.items[index];
                                 return ListTile(
                                 title: Text(place.name),
                                 subtitle: Text('${place.rating} (${place.userRatingCnt})'),
