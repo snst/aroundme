@@ -1,4 +1,6 @@
 // Copyright 2026 Stefan Schmidt
+import 'dart:io';
+
 import 'package:aroundme/app_data.dart';
 import 'package:aroundme/favorite_search_picker.dart';
 import 'package:aroundme/map_search.dart';
@@ -14,7 +16,7 @@ import 'package:google_map_dynamic_key/google_map_dynamic_key.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import 'StoredPlace.dart';
+import 'FavoritePlaces.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -172,6 +174,36 @@ class _AroundMePageState extends State<AroundMePage> {
     updateMarkers(data.filteredSearchResults);
   }
 
+  void _saveFavorites(String fullPath)
+  {
+    try {
+      String jsonString = data.placeStorage.getSerializedPlaces();
+      print(jsonString);
+
+      File(fullPath).writeAsStringSync(jsonString);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Saved: $fullPath"), backgroundColor: Colors.green),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  void _loadFavorites() async
+  {
+    String fullPath = await Settings.getFavoriteFile();
+    File file = File(fullPath);
+    String jsonString = await file.readAsString();
+    data.placeStorage.loadData(jsonString);
+
+
+    updateMarkers(data.filteredSearchResults);
+
+  }
+
   @override
   Widget build(BuildContext context) {
     final Color iconColor = Colors.black.withOpacity(0.6);
@@ -276,6 +308,13 @@ class _AroundMePageState extends State<AroundMePage> {
                   constraints: const BoxConstraints(),
                   onPressed: _togglePlacesList,
                 ),
+                const SizedBox(height: 80),
+                IconButton(
+                  icon: Icon(Icons.file_open, size: 38, color: iconColor),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () { _loadFavorites(); },
+                ),
               ],
             ),
           ),
@@ -287,7 +326,7 @@ class _AroundMePageState extends State<AroundMePage> {
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
               onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
+                Navigator.push(context, MaterialPageRoute(builder: (context) => SettingsScreen(onSaveFavorites: _saveFavorites)));
               },
             ),
           ),

@@ -1,4 +1,4 @@
-import 'package:aroundme/StoredPlace.dart';
+import 'package:aroundme/FavoritePlaces.dart';
 import 'package:aroundme/places.dart';
 import 'package:aroundme/result_filter.dart';
 
@@ -7,7 +7,7 @@ class AppData
   ResultFilter resultFilter = ResultFilter();
   Places searchResults = Places();
   Places filteredSearchResults = Places();
-  PlaceStorage placeStorage = PlaceStorage();
+  FavoritePlaces placeStorage = FavoritePlaces();
 
   void clear()
   {
@@ -31,6 +31,12 @@ class AppData
     }
 
     updateFilteredSearchResults();
+  }
+
+  void showFavorites(Places places)
+  {
+    //searchResults.from(places);
+    //updateFilteredSearchResults();
   }
 
   void updateFilteredSearchResults() {
@@ -60,7 +66,6 @@ class AppData
     resultFilter.rating = searchResults.minRating;
     resultFilter.ratingCnt = searchResults.minUserRatingCnt;
     resultFilter.cntVisible(searchResults);
-
   }
 
 

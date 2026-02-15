@@ -40,6 +40,35 @@ class Place {
     );
   }
 
+  // Converts the Object into a Map
+  Map<String, dynamic> toJsonFile() {
+    return {
+      'id': id,
+      'ratingCnt': userRatingCnt,
+      'rating': rating,
+      'lat': location.latitude,
+      'lon': location.longitude,
+      'name': name,
+      'gmPlace': gmPlace,
+    };
+  }
+
+  factory Place.fromJsonFile(Map<String, dynamic> json) {
+    Place place = Place(
+      id: json['id'] ?? '',
+      userRatingCnt: (json['ratingCnt'] ?? 0).toInt(),
+      rating: (json['rating'] ?? 0.0).toDouble(),
+      location: LatLng(json['lat'] ?? 0.0, json['lon'] ?? 0.0),
+      name: json['name'] ?? '',
+      gmDirections: '',
+      gmPlace: json['gmPlace'] ?? '',
+      gmReviews: '',
+      gmPhotos: '',
+    );
+    place.isFavorite = true;
+    return place;
+  }
+
   late String id;
   late int userRatingCnt;
   late double rating;

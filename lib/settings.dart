@@ -8,6 +8,11 @@ class Settings {
     return prefs.getString('api_key') ?? "";
   }
 
+  static Future<void> setApiKey(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('api_key', key);
+  }
+
   static Future<LatLng> getInitialPos() async {
     final prefs = await SharedPreferences.getInstance();
     double lat = prefs.getDouble('map_lat') ?? 49.4790322;
@@ -20,4 +25,15 @@ class Settings {
     await prefs.setDouble('map_lat', pos.latitude);
     await prefs.setDouble('map_lng', pos.longitude);
   }
+
+  static Future<String> getFavoriteFile() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('favorite_file') ?? "";
+  }
+
+  static Future<void> setFavoriteFile(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('favorite_file', key);
+  }
+
 }
