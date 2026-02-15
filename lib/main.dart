@@ -89,7 +89,7 @@ class _AroundMePageState extends State<AroundMePage> {
 
   Future<Set<Marker>> _buildMarkers(Places places) async {
     final newMarkers = <Marker>{};
-    for (final place in places.items) {
+    for (final place in places.places.values) {
       Color color = place.isFavorite ? Colors.green : Color.lerp(Colors.blue, Colors.red, places.normRatingCnt(place.userRatingCnt))!;
       final icon = await createCustomMarkerBitmap(
         "${place.rating}",
@@ -177,7 +177,7 @@ class _AroundMePageState extends State<AroundMePage> {
   void _saveFavorites(String fullPath)
   {
     try {
-      String jsonString = data.placeStorage.getSerializedPlaces();
+      String jsonString = data.placeStorage.toJson();
       print(jsonString);
 
       File(fullPath).writeAsStringSync(jsonString);
@@ -194,14 +194,14 @@ class _AroundMePageState extends State<AroundMePage> {
 
   void _loadFavorites() async
   {
-    String fullPath = await Settings.getFavoriteFile();
-    File file = File(fullPath);
-    String jsonString = await file.readAsString();
-    data.placeStorage.loadData(jsonString);
-
-
+    if (data.placeStorage.isEmpty()) {
+      String fullPath = await Settings.getFavoriteFile();
+      File file = File(fullPath);
+      String jsonString = await file.readAsString();
+      data.placeStorage.fromJson(jsonString);
+    }
+    data.setAndShowFavorites(data.placeStorage);
     updateMarkers(data.filteredSearchResults);
-
   }
 
   @override

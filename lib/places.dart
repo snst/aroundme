@@ -1,4 +1,6 @@
 // Copyright 2026 Stefan Schmidt
+import 'dart:convert';
+
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart'; // You'll need this package
 
@@ -84,12 +86,26 @@ class Place {
 }
 
 class Places {
+  Map<String, Place> places = {};
   List<Place> items = [];
-  List<String> placesIds = [];
+  //List<String> placesIds = [];
   int minUserRatingCnt = 0;
   int maxUserRatingCnt = 0;
   double minRating = 0;
   double maxRating = 0;
+
+  bool isEmpty() {
+    return places.isEmpty;
+  }
+
+  void copyFrom(Places other) {
+    items = List<Place>.from(other.items);
+    places = Map<String, Place>.from(other.places);
+    minUserRatingCnt = other.minUserRatingCnt;
+    maxUserRatingCnt = other.maxUserRatingCnt;
+    minRating = other.minRating;
+    maxRating = other.maxRating;
+  }
 
   double normRatingCnt(int val) {
     if (maxUserRatingCnt == minUserRatingCnt) {
@@ -99,32 +115,70 @@ class Places {
   }
 
   bool add(Place place) {
-    if (!placesIds.contains(place.id)) {
-      placesIds.add(place.id);
-      items.add(place);
-      if (place.userRatingCnt > maxUserRatingCnt) {
-        maxUserRatingCnt = place.userRatingCnt;
-      }
-      //if (minUserRatingCnt == 0 || place.userRatingCnt < minUserRatingCnt) {
-      //  minUserRatingCnt = place.userRatingCnt;
-      //}
-      if (place.rating > maxRating) {
-        maxRating = place.rating;
-      }
-      //if (minRating == 0 || place.rating < minRating) {
-      //  minRating = place.rating;
-      //}
-      return true;
+    if (places.containsKey(place.id)) {
+      items.remove(place);
     }
-    return false;
+    places[place.id] = place;
+    items.add(place);
+    if (place.userRatingCnt > maxUserRatingCnt) {
+      maxUserRatingCnt = place.userRatingCnt;
+    }
+    //if (minUserRatingCnt == 0 || place.userRatingCnt < minUserRatingCnt) {
+    //  minUserRatingCnt = place.userRatingCnt;
+    //}
+    if (place.rating > maxRating) {
+      maxRating = place.rating;
+    }
+    //if (minRating == 0 || place.rating < minRating) {
+    //  minRating = place.rating;
+    //}
+    return true;
   }
 
   void clear() {
+    places.clear();
     items.clear();
-    placesIds.clear();
     minUserRatingCnt = 0;
     maxUserRatingCnt = 0;
     minRating = 0;
     maxRating = 0;
   }
+
+  bool contains(String id)
+  {
+    return places.containsKey(id);
+  }
+
+  Place? get(String id)
+  {
+    return places[id];
+  }
+
+  void remove(String id)
+  {
+    Place? place = get(id);
+    if (place!=null) {
+      places.remove(id);
+      items.remove(place);
+    }
+
+  }
+
+  String toJson() {
+    List<Map<String, dynamic>> jsonList = places.values.map((place) => place.toJsonFile()).toList();
+    String jsonString = jsonEncode(jsonList);
+    return jsonString;
+  }
+
+
+  void fromJson(String jsonString) {
+    clear();
+    List<dynamic> dynamicList = jsonDecode(jsonString);
+    for(var jsonItem in dynamicList) {
+      Place place = Place.fromJsonFile(jsonItem);
+      add(place);
+    }
+  }
+
+
 }

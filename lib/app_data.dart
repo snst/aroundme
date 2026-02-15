@@ -7,7 +7,7 @@ class AppData
   ResultFilter resultFilter = ResultFilter();
   Places searchResults = Places();
   Places filteredSearchResults = Places();
-  FavoritePlaces placeStorage = FavoritePlaces();
+  Places placeStorage = Places();
 
   void clear()
   {
@@ -24,7 +24,7 @@ class AppData
   void onSearchFinished(Places places) {
     searchResults = places;
 
-    for(var place in places.items) {
+    for(var place in places.places.values) {
       if(placeStorage.contains(place.id)) {
         place.isFavorite = true;
       }
@@ -33,10 +33,9 @@ class AppData
     updateFilteredSearchResults();
   }
 
-  void showFavorites(Places places)
-  {
-    //searchResults.from(places);
-    //updateFilteredSearchResults();
+  void setAndShowFavorites(Places places) {
+    searchResults.copyFrom(places);
+    updateFilteredSearchResults();
   }
 
   void updateFilteredSearchResults() {
