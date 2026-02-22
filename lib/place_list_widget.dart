@@ -104,12 +104,12 @@ class _PlaceListWidgetState extends State<PlaceListWidget> {
                 Expanded(
                   child: ListView.builder(
                     controller: scrollController,
-                    itemCount: widget.data.filteredSearchResults.items.length,
+                    itemCount: widget.data.filteredPlaces.items.length,
                     itemBuilder: (context, index) {
-                      final place = widget.data.filteredSearchResults.items[index];
+                      final place = widget.data.filteredPlaces.items[index];
                       return ListTile(
                         title: Text(place.name),
-                        subtitle: Text('${place.rating} (${place.userRatingCnt})'),
+                        subtitle: Text('${place.rating} (${place.userRatingCnt}) - ${place.category}'),
                         selected: _selectedPlace == place,
                         selectedTileColor: Theme.of(context).colorScheme.secondaryFixedDim,
                         //selectedColor: Theme.of(context).colorScheme.primaryContainer,
@@ -125,6 +125,7 @@ class _PlaceListWidgetState extends State<PlaceListWidget> {
                                 });
                               },
                             ),
+                            /*
                             IconButton(
                               icon: const Icon(Icons.details),
                               onPressed: () {
@@ -139,12 +140,13 @@ class _PlaceListWidgetState extends State<PlaceListWidget> {
                               onPressed: () {
                                 launchURL(place.gmPlace);
                               },
-                            ) /*IconButton(
+                            )*/
+                            /*IconButton(
                               icon: const Icon(Icons.star),
                               onPressed: () {
                                 launchURL(place.gmReviews);
                               },
-                            ),*/,
+                            ),*/
                           ],
                         ),
                         onTap: () {

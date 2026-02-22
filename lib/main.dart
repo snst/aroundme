@@ -16,7 +16,6 @@ import 'package:google_map_dynamic_key/google_map_dynamic_key.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import 'FavoritePlaces.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -62,7 +61,7 @@ class _AroundMePageState extends State<AroundMePage> {
   EdgeInsets _mapPadding = const EdgeInsets.only(top: 400);
   bool _isPlacesListVisible = false;
   Set<Marker> markers = {};
-
+  PlaceSelection placeSelection = PlaceSelection.search;
 
   @override
   void initState() {
@@ -90,11 +89,10 @@ class _AroundMePageState extends State<AroundMePage> {
   Future<Set<Marker>> _buildMarkers(Places places) async {
     final newMarkers = <Marker>{};
     for (final place in places.places.values) {
-      Color color = place.isFavorite ? Colors.green : Color.lerp(Colors.blue, Colors.red, places.normRatingCnt(place.userRatingCnt))!;
-      final icon = await createCustomMarkerBitmap(
-        "${place.rating}",
-        color,
-      );
+      Color color = place.isFavorite
+          ? Colors.green
+          : Color.lerp(Colors.blue, Colors.red, places.normRatingCnt(place.userRatingCnt))!;
+      final icon = await createCustomMarkerBitmap("${place.rating}", color);
       newMarkers.add(
         Marker(
           markerId: MarkerId(place.id),
@@ -129,8 +127,8 @@ class _AroundMePageState extends State<AroundMePage> {
     }
   }
 
-  void updateMarkers(Places places) async {
-    final newMarkers = await _buildMarkers(places);
+  void updateMarkers() async {
+    final newMarkers = await _buildMarkers(data.filteredPlaces);
     if (!mounted) return;
     setState(() {
       markers = newMarkers;
@@ -139,7 +137,7 @@ class _AroundMePageState extends State<AroundMePage> {
 
   void onSearchFinished(Places places, bool hasMore) async {
     data.onSearchFinished(places);
-    updateMarkers(data.filteredSearchResults);
+    updateMarkers();
     if (!hasMore) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -166,43 +164,88 @@ class _AroundMePageState extends State<AroundMePage> {
   void toggleFavorite(Place place) {
     place.isFavorite = !place.isFavorite;
     if (place.isFavorite) {
-      data.placeStorage.add(place);
+      data.favoritePlaces.add(place);
     } else {
-      data.placeStorage.remove(place.id);
+      data.favoritePlaces.remove(place.id);
     }
 
-    updateMarkers(data.filteredSearchResults);
+    updateMarkers();
   }
 
-  void _saveFavorites(String fullPath)
-  {
-    try {
-      String jsonString = data.placeStorage.toJson();
-      print(jsonString);
+  /*
+  void _saveFavoritesAsWithDialog({String? fullPath}) async {
+    if (fullPath == null || fullPath.isEmpty) {
+      fullPath = await Settings.getFavoriteFile();
+      if (!await fileExists(fullPath)) {
+        fullPath = await FileHelper.createNewFile(context);
+      }
 
+      if (fullPath == null) return;
+    }
+    _saveFavoritesAs(fullPath);
+  }*/
+
+  void saveFavoritesAs(String? fullPath) async {
+    try {
+      if (fullPath == null) {
+        throw Exception("No file path provided");
+      }
+      String jsonString = data.favoritePlaces.toJson();
       File(fullPath).writeAsStringSync(jsonString);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Saved: $fullPath"), backgroundColor: Colors.green),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Saved: $fullPath"), backgroundColor: Colors.green));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
     }
   }
 
-  void _loadFavorites() async
-  {
-    if (data.placeStorage.isEmpty()) {
-      String fullPath = await Settings.getFavoriteFile();
+  void _showFavoritesDialog() async {}
+
+  void loadFavorites({bool clear = false, String? fullPath}) async {
+    if (clear) {
+      data.favoritePlaces.clear();
+    }
+
+    if (data.favoritePlaces.isEmpty()) {
+      if (fullPath == null || fullPath.isEmpty) {
+        fullPath = await Settings.getFavoriteFile();
+      }
       File file = File(fullPath);
       String jsonString = await file.readAsString();
-      data.placeStorage.fromJson(jsonString);
+      data.favoritePlaces.fromJson(jsonString);
     }
-    data.setAndShowFavorites(data.placeStorage);
-    updateMarkers(data.filteredSearchResults);
+    data.onShowFavorites(data.favoritePlaces);
+    //data.foundPlaces.copyFrom(other)
+    updateMarkers();
   }
+
+  void onSearchTextEntered(String text) {
+    clearResults();
+    if (placeSelection == PlaceSelection.favorite) {
+      //data.searchInFavorites(text);
+      //loadFavorites(clear: false);
+      data.lastFilteredPlacesSource = data.favoritePlaces.filterByText(text);
+      data.updateFilteredSearchResults();
+      updateMarkers();
+    }
+    else if (placeSelection == PlaceSelection.search) {
+      mapSearch.searchText(text);
+    }
+  }
+
+  void onPlaceSelectionChanged(PlaceSelection selection) {
+    if (selection == PlaceSelection.favorite) {
+      loadFavorites(clear: false);
+    }
+    else if (selection == PlaceSelection.search) {
+      clearResults();
+    }
+
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -235,7 +278,20 @@ class _AroundMePageState extends State<AroundMePage> {
               children: [
                 Row(
                   children: [
-                    const SizedBox(width: 100),
+                    const SizedBox(width: 50),
+                    IconButton(
+                      icon: Icon(placeSelectionToIcon(placeSelection), size: 38, color: iconColor),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () {
+                        setState(() {
+                          placeSelection = nextPlaceSelection(placeSelection);
+                          onPlaceSelectionChanged(placeSelection);
+                        });
+                      },
+                      onLongPress: () => _showFavoritesDialog,
+                    ),
+
                     Expanded(
                       child: TextField(
                         decoration: InputDecoration(
@@ -256,8 +312,7 @@ class _AroundMePageState extends State<AroundMePage> {
                         ),
                         controller: _searchController,
                         onSubmitted: (value) {
-                          clearResults();
-                          mapSearch.searchText(_searchController.text);
+                          onSearchTextEntered(_searchController.text);
                         },
                       ),
                     ),
@@ -309,12 +364,6 @@ class _AroundMePageState extends State<AroundMePage> {
                   onPressed: _togglePlacesList,
                 ),
                 const SizedBox(height: 80),
-                IconButton(
-                  icon: Icon(Icons.file_open, size: 38, color: iconColor),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  onPressed: () { _loadFavorites(); },
-                ),
               ],
             ),
           ),
@@ -326,12 +375,23 @@ class _AroundMePageState extends State<AroundMePage> {
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
               onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => SettingsScreen(onSaveFavorites: _saveFavorites)));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        SettingsScreen(onSaveFavorites: saveFavoritesAs, onLoadFavorites: loadFavorites),
+                  ),
+                );
               },
             ),
           ),
           if (_isPlacesListVisible)
-            PlaceListWidget(data: data, mapController: _mapController, onClosePressed: _togglePlacesList, onToggleFavorite: toggleFavorite)
+            PlaceListWidget(
+              data: data,
+              mapController: _mapController,
+              onClosePressed: _togglePlacesList,
+              onToggleFavorite: toggleFavorite,
+            ),
         ],
       ),
     );

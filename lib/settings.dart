@@ -1,6 +1,38 @@
 // Copyright 2026 Stefan Schmidt
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+enum PlaceSelection {
+  search,
+  favorite,
+  both
+}
+
+IconData placeSelectionToIcon(PlaceSelection placeSelection) {
+  switch (placeSelection) {
+    case PlaceSelection.search:
+      return Icons.search;
+    case PlaceSelection.favorite:
+      return Icons.favorite_border_sharp;
+    case PlaceSelection.both:
+      return Icons.send_and_archive_outlined;
+  }
+}
+
+PlaceSelection nextPlaceSelection(PlaceSelection placeSelection) {
+  switch (placeSelection) {
+    case PlaceSelection.search:
+      return PlaceSelection.favorite;
+    case PlaceSelection.favorite:
+      return PlaceSelection.search;
+    case PlaceSelection.both:
+      return PlaceSelection.search;
+  }
+}
+
+
 
 class Settings {
   static Future<String> getApiKey() async {

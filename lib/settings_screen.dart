@@ -1,21 +1,20 @@
 // Copyright 2026 Stefan Schmidt
-import 'dart:io';
-
 import 'package:aroundme/settings.dart';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
+
+import 'favorites_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key, required this.onSaveFavorites});
+  const SettingsScreen({super.key, required this.onSaveFavorites, required this.onLoadFavorites});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
   final Function onSaveFavorites;
+  final Function onLoadFavorites;
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController _apiKeyController;
-  late TextEditingController _favoriteFileController;
   String? _apiKey;
   String? _favoriteFile;
 
@@ -23,7 +22,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _apiKeyController = TextEditingController();
-    _favoriteFileController = TextEditingController();
     _loadsettings();
   }
 
@@ -32,33 +30,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _favoriteFile = await Settings.getFavoriteFile();
     setState(() {
       _apiKeyController.text = _apiKey ?? '';
-      _favoriteFileController.text = _favoriteFile ?? '';
     });
   }
 
   Future<void> _saveApiKey() async {
     _apiKey = _apiKeyController.text;
     await Settings.setApiKey(_apiKey!);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('API Key Saved!')),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('API Key Saved!')));
   }
 
-
-  Future<void> _selectFavoriteFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles();
-
-    if (result != null) {
-      String path = result.files.single.identifier!.toString();
-      Settings.setFavoriteFile(path);
+  Future<void> loadFavorites(BuildContext context) async {
+    String? filename = await FavoritesDialog.loadFavorites(context);
+    if (filename != null) {
       setState(() {
-        _favoriteFileController.text = path;
+        _favoriteFile = filename;
       });
-      //File file = File(result.files.single.path!);
-      //return file.readAsString();
+      widget.onLoadFavorites(clear: true, fullPath: filename);
     }
   }
 
+  Future<void> saveFavorites(BuildContext context) async {
+    widget.onSaveFavorites(_favoriteFile);
+  }
+
+  Future<void> saveFavoritesAs(BuildContext context) async {
+    String? filename = await FavoritesDialog.saveFavoritesAs(context);
+    if (filename != null) {
+      setState(() {
+        _favoriteFile = filename;
+      });
+      widget.onSaveFavorites(filename);
+    }
+  }
+
+  /*
     Future<void> saveSettingsAndFile(BuildContext context) async {
 
       String? directoryPath = await FilePicker.platform.getDirectoryPath();
@@ -94,73 +99,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
       Settings.setFavoriteFile(fullPath);
       widget.onSaveFavorites(fullPath);
     }
+    */
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
+      appBar: AppBar(title: const Text('Settings')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'API Key',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+            const Text('API Key', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             TextField(
               controller: _apiKeyController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'Enter your API key',
-              ),
+              decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'Enter your API key'),
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _saveApiKey,
-              child: const Text('Save'),
-            ),
+            ElevatedButton(onPressed: _saveApiKey, child: const Text('Save')),
 
-            const Text(
-              'Favorites File',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+            const Text('Favorites File', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            TextField(
-              controller: _favoriteFileController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'Favorite File',
-              ),
-            ),
+            Text(_favoriteFile ?? ""),
             const SizedBox(height: 16),
             Row(
               children: [
                 ElevatedButton(
-                  onPressed: _selectFavoriteFile,
+                  onPressed: () {
+                    loadFavorites(context);
+                  },
                   child: const Text('Load'),
                 ),
-                SizedBox(width: 10,),
+                SizedBox(width: 10),
                 ElevatedButton(
-                  onPressed: () { widget.onSaveFavorites(_favoriteFileController.text); },
+                  onPressed: () {
+                    saveFavorites(context);
+                  },
                   child: const Text('Save'),
                 ),
-                SizedBox(width: 10,),
+                SizedBox(width: 10),
                 ElevatedButton(
-                  onPressed: () { saveSettingsAndFile(context); },
+                  onPressed: () {
+                    saveFavoritesAs(context);
+                  },
                   child: const Text('Save As'),
-                ),
-                SizedBox(width: 10,),
-                ElevatedButton(
-                  onPressed: () {  },
-                  child: const Text('Clear'),
                 ),
               ],
             ),
-
           ],
         ),
       ),

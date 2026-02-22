@@ -16,6 +16,11 @@ class ResultFilter {
   int all = 0;
   SortPlaces sortBy = SortPlaces.ratingCnt;
 
+  void clear()
+  {
+    rating = 0;
+    ratingCnt = 0;
+  }
 
   double adjustedRating(double minVal, double maxVal) {
     if (rating > maxVal) rating = maxVal;

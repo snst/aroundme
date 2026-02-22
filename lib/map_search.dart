@@ -59,7 +59,7 @@ class MapSearch {
     return radius;
   }
 
-  Future<void> doSearchRequest(Uri uri, String mask, Map<String, dynamic> body) async {
+  Future<void> doSearchRequest(Uri uri, String mask, Map<String, dynamic> body, String category) async {
     if (nextPageToken.isNotEmpty) {
       body["pageToken"] = nextPageToken;
     }
@@ -77,7 +77,7 @@ class MapSearch {
           nextPageToken = data['nextPageToken'] ?? "";
 
           for (var place in newPlaces) {
-            places.add(Place.fromJson((place)));
+            places.add(Place.fromJson(place, category));
           }
           onSearchFinished(places, nextPageToken.isNotEmpty);
         } else {
@@ -121,7 +121,7 @@ class MapSearch {
         },
       },
     };
-    doSearchRequest(uri, mask, body);
+    doSearchRequest(uri, mask, body, searchText);
   }
 
   void searchNearby(List<String> searchNearby) {
@@ -144,6 +144,6 @@ class MapSearch {
         },
       },
     };
-    doSearchRequest(uri, mask, body);
+    doSearchRequest(uri, mask, body, searchNearby.toString());
   }
 }

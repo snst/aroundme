@@ -1,31 +1,31 @@
-import 'package:aroundme/FavoritePlaces.dart';
+// Copyright 2026 Stefan Schmidt
 import 'package:aroundme/places.dart';
 import 'package:aroundme/result_filter.dart';
 
 class AppData
 {
   ResultFilter resultFilter = ResultFilter();
-  Places searchResults = Places();
-  Places filteredSearchResults = Places();
-  Places placeStorage = Places();
+  Places foundPlaces = Places();
+  Places filteredPlaces = Places();
+  Places favoritePlaces = Places();
+  late Places lastFilteredPlacesSource = foundPlaces;
 
-  void clear()
-  {
-    resultFilter.ratingCnt = 0;
-    resultFilter.rating = 0;
-    filteredSearchResults.clear();
+  void clear() {
+    resultFilter.clear();
+    filteredPlaces.clear();
   }
 
   void filterAndSortPlaces(SortPlaces sortby) {
     resultFilter.sortBy = sortby;
-    filteredSearchResults = resultFilter.filter(searchResults);
+    filteredPlaces = resultFilter.filter(lastFilteredPlacesSource);
   }
 
   void onSearchFinished(Places places) {
-    searchResults = places;
+    foundPlaces = places;
+    lastFilteredPlacesSource = places;
 
     for(var place in places.places.values) {
-      if(placeStorage.contains(place.id)) {
+      if(favoritePlaces.contains(place.id)) {
         place.isFavorite = true;
       }
     }
@@ -33,39 +33,42 @@ class AppData
     updateFilteredSearchResults();
   }
 
-  void setAndShowFavorites(Places places) {
-    searchResults.copyFrom(places);
+  void onShowFavorites(Places places) {
+    lastFilteredPlacesSource = places;
     updateFilteredSearchResults();
   }
 
+  /*
+  void setAndShowFavorites(Places places) {
+    foundPlaces.copyFrom(places);
+    updateFilteredSearchResults();
+  }*/
+
   void updateFilteredSearchResults() {
-    filteredSearchResults = resultFilter.filter(searchResults);
+    filteredPlaces = resultFilter.filter(lastFilteredPlacesSource);
   }
 
+  void resultFilterCnt() => resultFilter.cntVisible(lastFilteredPlacesSource);
 
-  void resultFilterCnt() => resultFilter.cntVisible(searchResults);
-
-  double resultFilterGetSliderValueRating() => resultFilter.adjustedRating(searchResults.minRating, searchResults.maxRating);
-  double resultFilterGetSliderValueMinRating() => searchResults.minRating;
-  double resultFilterGetSliderValueMaxRating() => searchResults.maxRating;
+  double resultFilterGetSliderValueRating() => resultFilter.adjustedRating(lastFilteredPlacesSource.minRating, lastFilteredPlacesSource.maxRating);
+  double resultFilterGetSliderValueMinRating() => lastFilteredPlacesSource.minRating;
+  double resultFilterGetSliderValueMaxRating() => lastFilteredPlacesSource.maxRating;
   void resultFilterSetRating(double value) {
     resultFilter.rating = value;
     resultFilterCnt();
   }
 
-  double resultFilterGetSliderValueRatingCnt() => resultFilter.adjustedRatingCnt(searchResults.minUserRatingCnt, searchResults.maxUserRatingCnt).toDouble();
-  double resultFilterGetSliderValueMinRatingCnt() => searchResults.minUserRatingCnt.toDouble();
-  double resultFilterGetSliderValueMaxRatingCnt() => searchResults.maxUserRatingCnt.toDouble();
+  double resultFilterGetSliderValueRatingCnt() => resultFilter.adjustedRatingCnt(foundPlaces.minUserRatingCnt, foundPlaces.maxUserRatingCnt).toDouble();
+  double resultFilterGetSliderValueMinRatingCnt() => foundPlaces.minUserRatingCnt.toDouble();
+  double resultFilterGetSliderValueMaxRatingCnt() => foundPlaces.maxUserRatingCnt.toDouble();
   void resultFilterSetRatingCnt(double value) {
     resultFilter.ratingCnt = value.toInt();
     resultFilterCnt();
   }
 
   void resultFilterClearMinValues() {
-    resultFilter.rating = searchResults.minRating;
-    resultFilter.ratingCnt = searchResults.minUserRatingCnt;
-    resultFilter.cntVisible(searchResults);
+    resultFilter.rating = foundPlaces.minRating;
+    resultFilter.ratingCnt = foundPlaces.minUserRatingCnt;
+    resultFilter.cntVisible(foundPlaces);
   }
-
-
 }

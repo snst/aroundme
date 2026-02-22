@@ -26,9 +26,10 @@ class Place {
     required this.gmPlace,
     required this.gmReviews,
     required this.gmPhotos,
+    required this.category,
   });
 
-  factory Place.fromJson(Map<String, dynamic> json) {
+  factory Place.fromJson(Map<String, dynamic> json, String category) {
     return Place(
       id: json['id'] ?? '',
       userRatingCnt: (json['userRatingCount'] ?? 0).toInt(),
@@ -39,6 +40,7 @@ class Place {
       gmPlace: json['googleMapsLinks']?['placeUri'] ?? '',
       gmReviews: json['googleMapsLinks']?['reviewsUri'] ?? '',
       gmPhotos: json['googleMapsLinks']?['photosUri'] ?? '',
+      category: category,
     );
   }
 
@@ -52,6 +54,7 @@ class Place {
       'lon': location.longitude,
       'name': name,
       'gmPlace': gmPlace,
+      'category': category,
     };
   }
 
@@ -66,9 +69,16 @@ class Place {
       gmPlace: json['gmPlace'] ?? '',
       gmReviews: '',
       gmPhotos: '',
+      category: json['category'] ?? '',
     );
     place.isFavorite = true;
     return place;
+  }
+
+
+  bool containsText(String text)
+  {
+    return name.toLowerCase().contains(text.toLowerCase()) || category.toLowerCase().contains(text.toLowerCase());
   }
 
   late String id;
@@ -82,12 +92,14 @@ class Place {
   late String gmPlace;
   late String gmReviews;
   late String gmPhotos;
+  late String category;
   bool isFavorite = false;
 }
 
 class Places {
   Map<String, Place> places = {};
   List<Place> items = [];
+
   //List<String> placesIds = [];
   int minUserRatingCnt = 0;
   int maxUserRatingCnt = 0;
@@ -144,24 +156,20 @@ class Places {
     maxRating = 0;
   }
 
-  bool contains(String id)
-  {
+  bool contains(String id) {
     return places.containsKey(id);
   }
 
-  Place? get(String id)
-  {
+  Place? get(String id) {
     return places[id];
   }
 
-  void remove(String id)
-  {
+  void remove(String id) {
     Place? place = get(id);
-    if (place!=null) {
+    if (place != null) {
       places.remove(id);
       items.remove(place);
     }
-
   }
 
   String toJson() {
@@ -174,11 +182,20 @@ class Places {
   void fromJson(String jsonString) {
     clear();
     List<dynamic> dynamicList = jsonDecode(jsonString);
-    for(var jsonItem in dynamicList) {
+    for (var jsonItem in dynamicList) {
       Place place = Place.fromJsonFile(jsonItem);
       add(place);
     }
   }
 
+  Places filterByText(String searchText) {
+    Places ret = Places();
+    searchText = searchText.toLowerCase();
 
+    for (final place in places.values) {
+      if (place.containsText(searchText))
+        ret.add(place);
+    }
+    return ret;
+  }
 }

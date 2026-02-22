@@ -46,7 +46,13 @@ void showFilterDialog(BuildContext context, AppData data, Function onUpdateMarke
               // TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
               ElevatedButton(
                 onPressed: () {
-                  setDialogState(() => data.resultFilterClearMinValues());
+                  setDialogState(() async {
+                    data.resultFilterClearMinValues();
+                    data.updateFilteredSearchResults();
+                    onUpdateMarker();
+                    Navigator.pop(context);
+                    }
+                    );
                 },
                 child: const Text("Clear"),
               ),
@@ -54,7 +60,7 @@ void showFilterDialog(BuildContext context, AppData data, Function onUpdateMarke
               ElevatedButton(
                 onPressed: () async {
                   data.updateFilteredSearchResults();
-                  onUpdateMarker(data.filteredSearchResults);
+                  onUpdateMarker();
                   Navigator.pop(context);
                 },
                 child: const Text("Filter"),
