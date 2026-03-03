@@ -1,6 +1,4 @@
 // Copyright 2026 Stefan Schmidt
-import 'dart:io';
-
 import 'package:aroundme/app_data.dart';
 import 'package:aroundme/favorite_search_picker.dart';
 import 'package:aroundme/map_search.dart';
@@ -61,11 +59,11 @@ class _AroundMePageState extends State<AroundMePage> {
   EdgeInsets _mapPadding = const EdgeInsets.only(top: 400);
   bool _isPlacesListVisible = false;
   Set<Marker> markers = {};
-  PlaceSelection placeSelection = PlaceSelection.search;
 
   @override
   void initState() {
     super.initState();
+    data.onUpdateMarkers = updateMarkers2;
     mapSearch = MapSearch(widget._apiKey, onSearchFinished);
     _init();
   }
@@ -135,9 +133,17 @@ class _AroundMePageState extends State<AroundMePage> {
     });
   }
 
+  void updateMarkers2(Places places) async {
+    final newMarkers = await _buildMarkers(places);
+    if (!mounted) return;
+    setState(() {
+      markers = newMarkers;
+    });
+  }
+
   void onSearchFinished(Places places, bool hasMore) async {
     data.onSearchFinished(places);
-    updateMarkers();
+    //updateMarkers();
     if (!hasMore) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -169,7 +175,7 @@ class _AroundMePageState extends State<AroundMePage> {
       data.favoritePlaces.remove(place.id);
     }
 
-    updateMarkers();
+    //updateMarkers();
   }
 
   /*
@@ -185,13 +191,12 @@ class _AroundMePageState extends State<AroundMePage> {
     _saveFavoritesAs(fullPath);
   }*/
 
-  void saveFavoritesAs(String? fullPath) async {
+  void saveFavoritesAs(String? fullPath) {
     try {
       if (fullPath == null) {
         throw Exception("No file path provided");
       }
-      String jsonString = data.favoritePlaces.toJson();
-      File(fullPath).writeAsStringSync(jsonString);
+      data.saveFavoritesAs(fullPath);
 
       ScaffoldMessenger.of(
         context,
@@ -203,47 +208,22 @@ class _AroundMePageState extends State<AroundMePage> {
 
   void _showFavoritesDialog() async {}
 
-  void loadFavorites({bool clear = false, String? fullPath}) async {
-    if (clear) {
-      data.favoritePlaces.clear();
-    }
 
-    if (data.favoritePlaces.isEmpty()) {
-      if (fullPath == null || fullPath.isEmpty) {
-        fullPath = await Settings.getFavoriteFile();
-      }
-      File file = File(fullPath);
-      String jsonString = await file.readAsString();
-      data.favoritePlaces.fromJson(jsonString);
-    }
-    data.onShowFavorites(data.favoritePlaces);
-    //data.foundPlaces.copyFrom(other)
-    updateMarkers();
-  }
 
   void onSearchTextEntered(String text) {
     clearResults();
-    if (placeSelection == PlaceSelection.favorite) {
+    if (data.searchMode == SearchMode.favorite) {
       //data.searchInFavorites(text);
       //loadFavorites(clear: false);
-      data.lastFilteredPlacesSource = data.favoritePlaces.filterByText(text);
-      data.updateFilteredSearchResults();
-      updateMarkers();
+      data.placesToShow = data.favoritePlaces.filterByText(text);
+      data.filterAndShowResults();
+      //updateMarkers();
     }
-    else if (placeSelection == PlaceSelection.search) {
+    else if (data.searchMode == SearchMode.search) {
       mapSearch.searchText(text);
     }
   }
 
-  void onPlaceSelectionChanged(PlaceSelection selection) {
-    if (selection == PlaceSelection.favorite) {
-      loadFavorites(clear: false);
-    }
-    else if (selection == PlaceSelection.search) {
-      clearResults();
-    }
-
-  }
 
 
 
@@ -280,13 +260,12 @@ class _AroundMePageState extends State<AroundMePage> {
                   children: [
                     const SizedBox(width: 50),
                     IconButton(
-                      icon: Icon(placeSelectionToIcon(placeSelection), size: 38, color: iconColor),
+                      icon: Icon(placeSelectionToIcon(data.searchMode), size: 38, color: iconColor),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       onPressed: () {
                         setState(() {
-                          placeSelection = nextPlaceSelection(placeSelection);
-                          onPlaceSelectionChanged(placeSelection);
+                          data.setSearchMode(nextSearchMode(data.searchMode));
                         });
                       },
                       onLongPress: () => _showFavoritesDialog,
@@ -379,7 +358,7 @@ class _AroundMePageState extends State<AroundMePage> {
                   context,
                   MaterialPageRoute(
                     builder: (context) =>
-                        SettingsScreen(onSaveFavorites: saveFavoritesAs, onLoadFavorites: loadFavorites),
+                        SettingsScreen(onSaveFavorites: saveFavoritesAs, onLoadFavorites: data.loadFavorites),
                   ),
                 );
               },
@@ -391,6 +370,7 @@ class _AroundMePageState extends State<AroundMePage> {
               mapController: _mapController,
               onClosePressed: _togglePlacesList,
               onToggleFavorite: toggleFavorite,
+              showCategory: data.searchMode == SearchMode.favorite,
             ),
         ],
       ),

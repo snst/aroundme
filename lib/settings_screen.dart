@@ -45,7 +45,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() {
         _favoriteFile = filename;
       });
-      widget.onLoadFavorites(clear: true, fullPath: filename);
+      widget.onLoadFavorites(fullPath: filename);
     }
   }
 

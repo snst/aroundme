@@ -48,7 +48,7 @@ void showFilterDialog(BuildContext context, AppData data, Function onUpdateMarke
                 onPressed: () {
                   setDialogState(() async {
                     data.resultFilterClearMinValues();
-                    data.updateFilteredSearchResults();
+                    data.filterAndShowResults();
                     onUpdateMarker();
                     Navigator.pop(context);
                     }
@@ -59,7 +59,7 @@ void showFilterDialog(BuildContext context, AppData data, Function onUpdateMarke
 
               ElevatedButton(
                 onPressed: () async {
-                  data.updateFilteredSearchResults();
+                  data.filterAndShowResults();
                   onUpdateMarker();
                   Navigator.pop(context);
                 },

@@ -1,5 +1,4 @@
 import 'package:aroundme/app_data.dart';
-import 'package:aroundme/place_popup.dart';
 import 'package:aroundme/places.dart';
 import 'package:aroundme/result_filter.dart';
 import 'package:flutter/material.dart';
@@ -12,12 +11,14 @@ class PlaceListWidget extends StatefulWidget {
     required GoogleMapController? mapController,
     required this.onClosePressed,
     required this.onToggleFavorite,
+    required this.showCategory,
   }) : _mapController = mapController;
 
   final AppData data;
   final GoogleMapController? _mapController;
   final Function onClosePressed;
   final Function onToggleFavorite;
+  final bool showCategory;
 
   @override
   State<PlaceListWidget> createState() => _PlaceListWidgetState();
@@ -71,6 +72,7 @@ class _PlaceListWidgetState extends State<PlaceListWidget> {
                               });
                             },
                     ),
+                    /*
                     IconButton(
                       icon: const Icon(Icons.info),
                       onPressed: _selectedPlace == null
@@ -78,7 +80,8 @@ class _PlaceListWidgetState extends State<PlaceListWidget> {
                           : () {
                               launchURL(_selectedPlace!.gmPlace);
                             },
-                    ),
+                    ),*/
+                    SizedBox(width: 20),
                     IconButton(
                       icon: const Icon(Icons.rate_review),
                       onPressed: _selectedPlace == null
@@ -109,13 +112,19 @@ class _PlaceListWidgetState extends State<PlaceListWidget> {
                       final place = widget.data.filteredPlaces.items[index];
                       return ListTile(
                         title: Text(place.name),
-                        subtitle: Text('${place.rating} (${place.userRatingCnt}) - ${place.category}'),
+                        subtitle: Row(
+                          children: [
+                            Text('${place.rating} (${place.userRatingCnt})' + (widget.showCategory ? '   ${place.category}' : '') + '  '),
+                            if (place.isFavorite) const Icon(Icons.heart_broken, color: Colors.red)
+                          ],
+                        ),
                         selected: _selectedPlace == place,
                         selectedTileColor: Theme.of(context).colorScheme.secondaryFixedDim,
                         //selectedColor: Theme.of(context).colorScheme.primaryContainer,
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            /*
                             IconButton(
                               icon: const Icon(Icons.heart_broken),
                               color: place.isFavorite ? Colors.red : null,
@@ -124,7 +133,7 @@ class _PlaceListWidgetState extends State<PlaceListWidget> {
                                   widget.onToggleFavorite(place);
                                 });
                               },
-                            ),
+                            ),*/
                             /*
                             IconButton(
                               icon: const Icon(Icons.details),
@@ -134,14 +143,16 @@ class _PlaceListWidgetState extends State<PlaceListWidget> {
                                 widget._mapController?.showMarkerInfoWindow(MarkerId(place.id));
                                 showPlacePopup(context, place, widget.onToggleFavorite);
                               },
-                            ),
+                            ),*/
+
                             IconButton(
                               icon: const Icon(Icons.info),
                               onPressed: () {
                                 launchURL(place.gmPlace);
                               },
-                            )*/
-                            /*IconButton(
+                            )
+                        /*
+                            IconButton(
                               icon: const Icon(Icons.star),
                               onPressed: () {
                                 launchURL(place.gmReviews);

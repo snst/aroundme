@@ -1,14 +1,58 @@
 // Copyright 2026 Stefan Schmidt
+import 'dart:io';
+
 import 'package:aroundme/places.dart';
 import 'package:aroundme/result_filter.dart';
+import 'package:aroundme/settings.dart';
 
 class AppData
 {
   ResultFilter resultFilter = ResultFilter();
   Places foundPlaces = Places();
-  Places filteredPlaces = Places();
   Places favoritePlaces = Places();
-  late Places lastFilteredPlacesSource = foundPlaces;
+  Places filteredPlaces = Places();
+  Function onUpdateMarkers = (Places places) {};
+
+  late Places placesToShow = foundPlaces;
+  SearchMode searchMode = SearchMode.search;
+
+
+  void setSearchMode(SearchMode searchMode) {
+    this.searchMode = searchMode;
+    if (searchMode == SearchMode.favorite) {
+      loadFavorites(null);
+    }
+    else if (searchMode == SearchMode.search) {
+      showLastSearchResults();
+    }
+  }
+
+  void loadFavorites(String? fullPath) async {
+    if (fullPath != null) {
+      favoritePlaces.clear();
+      Settings.setFavoriteFile(fullPath);
+    }
+
+    if (favoritePlaces.isEmpty()) {
+      String fullPath = await Settings.getFavoriteFile();
+      File file = File(fullPath);
+      String jsonString = await file.readAsString();
+      favoritePlaces.fromJson(jsonString);
+    }
+    favoritePlaces.updateMinMaxValues();
+    placesToShow = favoritePlaces;
+    filterAndShowResults();
+  }
+
+  void saveFavoritesAs(String fullPath) async {
+    String jsonString = favoritePlaces.toJson();
+    File(fullPath).writeAsStringSync(jsonString);
+  }
+
+  void showLastSearchResults() {
+    placesToShow = foundPlaces;
+    filterAndShowResults();
+  }
 
   void clear() {
     resultFilter.clear();
@@ -17,50 +61,46 @@ class AppData
 
   void filterAndSortPlaces(SortPlaces sortby) {
     resultFilter.sortBy = sortby;
-    filteredPlaces = resultFilter.filter(lastFilteredPlacesSource);
+    filteredPlaces = resultFilter.filter(placesToShow);
   }
 
   void onSearchFinished(Places places) {
     foundPlaces = places;
-    lastFilteredPlacesSource = places;
+    placesToShow = places;
 
     for(var place in places.places.values) {
       if(favoritePlaces.contains(place.id)) {
         place.isFavorite = true;
       }
     }
-
-    updateFilteredSearchResults();
+    filterAndShowResults();
   }
-
+/*
   void onShowFavorites(Places places) {
-    lastFilteredPlacesSource = places;
-    updateFilteredSearchResults();
-  }
-
-  /*
-  void setAndShowFavorites(Places places) {
-    foundPlaces.copyFrom(places);
-    updateFilteredSearchResults();
+    placesToShow = places;
+    filterAndShowResults();
   }*/
 
-  void updateFilteredSearchResults() {
-    filteredPlaces = resultFilter.filter(lastFilteredPlacesSource);
+
+  void filterAndShowResults() {
+    filteredPlaces = resultFilter.filter(placesToShow);
+    onUpdateMarkers(filteredPlaces);
+
   }
 
-  void resultFilterCnt() => resultFilter.cntVisible(lastFilteredPlacesSource);
+  void resultFilterCnt() => resultFilter.cntVisible(placesToShow);
 
-  double resultFilterGetSliderValueRating() => resultFilter.adjustedRating(lastFilteredPlacesSource.minRating, lastFilteredPlacesSource.maxRating);
-  double resultFilterGetSliderValueMinRating() => lastFilteredPlacesSource.minRating;
-  double resultFilterGetSliderValueMaxRating() => lastFilteredPlacesSource.maxRating;
+  double resultFilterGetSliderValueRating() => resultFilter.adjustedRating(placesToShow.minRating, placesToShow.maxRating);
+  double resultFilterGetSliderValueMinRating() => placesToShow.minRating;
+  double resultFilterGetSliderValueMaxRating() => placesToShow.maxRating;
   void resultFilterSetRating(double value) {
     resultFilter.rating = value;
     resultFilterCnt();
   }
 
-  double resultFilterGetSliderValueRatingCnt() => resultFilter.adjustedRatingCnt(foundPlaces.minUserRatingCnt, foundPlaces.maxUserRatingCnt).toDouble();
-  double resultFilterGetSliderValueMinRatingCnt() => foundPlaces.minUserRatingCnt.toDouble();
-  double resultFilterGetSliderValueMaxRatingCnt() => foundPlaces.maxUserRatingCnt.toDouble();
+  double resultFilterGetSliderValueRatingCnt() => resultFilter.adjustedRatingCnt(placesToShow.minUserRatingCnt, placesToShow.maxUserRatingCnt).toDouble();
+  double resultFilterGetSliderValueMinRatingCnt() => placesToShow.minUserRatingCnt.toDouble();
+  double resultFilterGetSliderValueMaxRatingCnt() => placesToShow.maxUserRatingCnt.toDouble();
   void resultFilterSetRatingCnt(double value) {
     resultFilter.ratingCnt = value.toInt();
     resultFilterCnt();

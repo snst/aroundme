@@ -1,34 +1,33 @@
 // Copyright 2026 Stefan Schmidt
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum PlaceSelection {
+enum SearchMode {
   search,
   favorite,
   both
 }
 
-IconData placeSelectionToIcon(PlaceSelection placeSelection) {
+IconData placeSelectionToIcon(SearchMode placeSelection) {
   switch (placeSelection) {
-    case PlaceSelection.search:
+    case SearchMode.search:
       return Icons.search;
-    case PlaceSelection.favorite:
+    case SearchMode.favorite:
       return Icons.favorite_border_sharp;
-    case PlaceSelection.both:
+    case SearchMode.both:
       return Icons.send_and_archive_outlined;
   }
 }
 
-PlaceSelection nextPlaceSelection(PlaceSelection placeSelection) {
+SearchMode nextSearchMode(SearchMode placeSelection) {
   switch (placeSelection) {
-    case PlaceSelection.search:
-      return PlaceSelection.favorite;
-    case PlaceSelection.favorite:
-      return PlaceSelection.search;
-    case PlaceSelection.both:
-      return PlaceSelection.search;
+    case SearchMode.search:
+      return SearchMode.favorite;
+    case SearchMode.favorite:
+      return SearchMode.search;
+    case SearchMode.both:
+      return SearchMode.search;
   }
 }
 
@@ -63,9 +62,9 @@ class Settings {
     return prefs.getString('favorite_file') ?? "";
   }
 
-  static Future<void> setFavoriteFile(String key) async {
+  static Future<void> setFavoriteFile(String fullPath) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('favorite_file', key);
+    await prefs.setString('favorite_file', fullPath);
   }
 
 }

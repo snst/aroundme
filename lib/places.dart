@@ -25,7 +25,6 @@ class Place {
     required this.gmDirections,
     required this.gmPlace,
     required this.gmReviews,
-    required this.gmPhotos,
     required this.category,
   });
 
@@ -39,7 +38,6 @@ class Place {
       gmDirections: json['googleMapsLinks']?['directionsUri'] ?? '',
       gmPlace: json['googleMapsLinks']?['placeUri'] ?? '',
       gmReviews: json['googleMapsLinks']?['reviewsUri'] ?? '',
-      gmPhotos: json['googleMapsLinks']?['photosUri'] ?? '',
       category: category,
     );
   }
@@ -54,6 +52,8 @@ class Place {
       'lon': location.longitude,
       'name': name,
       'gmPlace': gmPlace,
+      'gmReviews': gmReviews,
+      'gmDirections': gmDirections,
       'category': category,
     };
   }
@@ -65,10 +65,9 @@ class Place {
       rating: (json['rating'] ?? 0.0).toDouble(),
       location: LatLng(json['lat'] ?? 0.0, json['lon'] ?? 0.0),
       name: json['name'] ?? '',
-      gmDirections: '',
+      gmDirections: json['gmDirections'] ?? '',
       gmPlace: json['gmPlace'] ?? '',
-      gmReviews: '',
-      gmPhotos: '',
+      gmReviews: json['gmReviews'] ?? '',
       category: json['category'] ?? '',
     );
     place.isFavorite = true;
@@ -86,12 +85,9 @@ class Place {
   late double rating;
   late LatLng location;
   late String name;
-
-  //late String gm;
   late String gmDirections;
   late String gmPlace;
   late String gmReviews;
-  late String gmPhotos;
   late String category;
   bool isFavorite = false;
 }
@@ -126,9 +122,23 @@ class Places {
     return (val - minUserRatingCnt) / (maxUserRatingCnt - minUserRatingCnt);
   }
 
+  void updateMinMaxValues()
+  {
+    maxUserRatingCnt = 0;
+    maxRating = 0;
+    for (final place in places.values) {
+      if (place.userRatingCnt > maxUserRatingCnt) {
+        maxUserRatingCnt = place.userRatingCnt;
+      }
+      if (place.rating > maxRating) {
+        maxRating = place.rating;
+      }
+    }
+  }
+
   bool add(Place place) {
     if (places.containsKey(place.id)) {
-      items.remove(place);
+      items.remove(places[place.id]);
     }
     places[place.id] = place;
     items.add(place);
@@ -193,8 +203,9 @@ class Places {
     searchText = searchText.toLowerCase();
 
     for (final place in places.values) {
-      if (place.containsText(searchText))
+      if (place.containsText(searchText)) {
         ret.add(place);
+      }
     }
     return ret;
   }
