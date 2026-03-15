@@ -1,7 +1,7 @@
 import 'package:aroundme/app_data.dart';
 import 'package:flutter/material.dart';
 
-void showFilterDialog(BuildContext context, AppData data, Function onUpdateMarker) {
+void showFilterDialog(BuildContext context, AppData data) {
   showDialog(
     context: context,
     builder: (context) {
@@ -49,7 +49,6 @@ void showFilterDialog(BuildContext context, AppData data, Function onUpdateMarke
                   setDialogState(() async {
                     data.resultFilterClearMinValues();
                     data.filterAndShowResults();
-                    onUpdateMarker();
                     Navigator.pop(context);
                     }
                     );
@@ -60,7 +59,6 @@ void showFilterDialog(BuildContext context, AppData data, Function onUpdateMarke
               ElevatedButton(
                 onPressed: () async {
                   data.filterAndShowResults();
-                  onUpdateMarker();
                   Navigator.pop(context);
                 },
                 child: const Text("Filter"),

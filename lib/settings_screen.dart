@@ -84,7 +84,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             const Text('Favorites File', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Text(widget.favoriteFile ?? ""),
+            Text(widget.favoriteFile),
             const SizedBox(height: 16),
             Row(
               children: [

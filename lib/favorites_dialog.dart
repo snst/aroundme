@@ -1,5 +1,4 @@
 // Copyright 2026 Stefan Schmidt
-import 'package:aroundme/settings.dart';
 import 'package:flutter/cupertino.dart';
 import 'file_dialog.dart';
 

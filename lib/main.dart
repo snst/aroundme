@@ -14,7 +14,6 @@ import 'package:google_map_dynamic_key/google_map_dynamic_key.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final String apiKey = await Settings.getApiKey();
@@ -64,9 +63,7 @@ class _AroundMePageState extends State<AroundMePage> {
   @override
   void initState() {
     super.initState();
-    _listener = AppLifecycleListener(
-      onStateChange: _handleStateChange,
-    );
+    _listener = AppLifecycleListener(onStateChange: _handleStateChange);
     data.onUpdateMarkers = updateMarkers2;
     mapSearch = MapSearch(widget._apiKey, onSearchFinished);
     _init();
@@ -93,7 +90,6 @@ class _AroundMePageState extends State<AroundMePage> {
     // 'paused' is when it is fully in the background
     if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
       data.saveFavoritesIfChanged();
-
     }
   }
 
@@ -131,7 +127,7 @@ class _AroundMePageState extends State<AroundMePage> {
 
   void clearResults() {
     setState(() {
-      data.setSearchMode(SearchMode.search);
+      data.showFavorites(false);
       mapSearch.clearResults();
       mapSearch.clearNextPageToken();
       markers.clear();
@@ -176,7 +172,7 @@ class _AroundMePageState extends State<AroundMePage> {
     }
   }
 
-  void _togglePlacesList() {
+  void togglePlacesList() {
     setState(() {
       _isPlacesListVisible = !_isPlacesListVisible;
       if (_isPlacesListVisible) {
@@ -189,64 +185,45 @@ class _AroundMePageState extends State<AroundMePage> {
   }
 
   void toggleFavorite(Place place) {
-    place.isFavorite = !place.isFavorite;
-    if (place.isFavorite) {
-      data.favoritePlaces.add(place);
-    } else {
-      data.favoritePlaces.remove(place.id);
-    }
+    data.toggleFavorite(place);
   }
 
-  void saveNewFavorites(String? fullPath) {
+  void saveNewFavorites(String fullPath) {
     try {
-      if (fullPath != null) {
-        data.saveFavoritesIfChanged();
-        data.clearFavorites();
-        data.saveFavorites(fullPath);
-      }
+      data.saveNewFavorites(fullPath);
+      data.showFavorites(true);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
     }
   }
 
-  void saveFavorites(String? fullPath) {
+  void saveFavorites(String fullPath) {
     try {
-      if (fullPath != null) {
-        data.saveFavorites(fullPath);
-      }
+      data.saveFavoritesAs(fullPath);
+      data.showFavorites(true);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
     }
   }
 
-  void loadFavorites(String? fullPath) {
+  void loadFavorites(String fullPath, {bool show = true}) {
     try {
       data.saveFavoritesIfChanged();
-      data.setSearchMode(SearchMode.favorite);
       data.loadFavorites(fullPath);
-
-      //ScaffoldMessenger.of(
-      //  context,
-      //).showSnackBar(SnackBar(content: Text("Loaded: $fullPath"), backgroundColor: Colors.green));
+      data.showFavorites(show);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
     }
-
   }
 
   void onSearchTextEntered(String text) {
     clearResults();
-    if (data.searchMode == SearchMode.favorite) {
-      data.placesToShow = data.favoritePlaces.filterByText(text);
-      data.filterAndShowResults();
-    }
-    else if (data.searchMode == SearchMode.search) {
+    if (data.favoritesVisible) {
+      data.searchFavorites(text);
+    } else {
       mapSearch.searchText(text);
     }
   }
-
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -281,12 +258,12 @@ class _AroundMePageState extends State<AroundMePage> {
                   children: [
                     const SizedBox(width: 50),
                     IconButton(
-                      icon: Icon(placeSelectionToIcon(data.searchMode), size: 38, color: iconColor),
+                      icon: Icon(Icons.favorite_border_sharp, size: 38, color: (data.favoritesVisible ? Colors.red.withOpacity(0.6) : iconColor)),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       onPressed: () {
                         setState(() {
-                          data.setSearchMode(nextSearchMode(data.searchMode));
+                          data.showFavorites(!data.favoritesVisible);
                         });
                       },
                       //onLongPress: () => _showFavoritesDialog,
@@ -320,7 +297,7 @@ class _AroundMePageState extends State<AroundMePage> {
                 ),
                 const SizedBox(height: 10),
                 TextButton(
-                  onPressed: () => showFilterDialog(context, data, updateMarkers),
+                  onPressed: () => showFilterDialog(context, data),
                   style: TextButton.styleFrom(
                     backgroundColor: Colors.white.withAlpha(230), // Light blue background
                     foregroundColor: Colors.black, // Text color
@@ -346,14 +323,14 @@ class _AroundMePageState extends State<AroundMePage> {
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   onPressed: () {
-                    data.setSearchMode(SearchMode.search);
+                    data.showFavorites(false);
                     mapSearch.searchNext();
                   },
                 ),
                 const SizedBox(height: 10),
                 FavoriteSearchPicker(
                   onSelected: (value) {
-                    data.setSearchMode(SearchMode.search);
+                    data.showFavorites(false);
                     clearResults();
                     mapSearch.searchNearby(value);
                   },
@@ -363,7 +340,7 @@ class _AroundMePageState extends State<AroundMePage> {
                   icon: Icon(Icons.list, size: 38, color: iconColor),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
-                  onPressed: _togglePlacesList,
+                  onPressed: togglePlacesList,
                 ),
                 const SizedBox(height: 80),
               ],
@@ -380,12 +357,12 @@ class _AroundMePageState extends State<AroundMePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        SettingsScreen(
-                          favoriteFile: data.favoriteFile,
-                            onSaveFavorites: saveFavorites,
-                            onSaveNewFavorites: saveNewFavorites,
-                            onLoadFavorites: loadFavorites),
+                    builder: (context) => SettingsScreen(
+                      favoriteFile: data.favoriteFile,
+                      onSaveFavorites: saveFavorites,
+                      onSaveNewFavorites: saveNewFavorites,
+                      onLoadFavorites: loadFavorites,
+                    ),
                   ),
                 );
               },
@@ -395,9 +372,9 @@ class _AroundMePageState extends State<AroundMePage> {
             PlaceListWidget(
               data: data,
               mapController: _mapController,
-              onClosePressed: _togglePlacesList,
+              onClosePressed: togglePlacesList,
               onToggleFavorite: toggleFavorite,
-              showCategory: data.searchMode == SearchMode.favorite,
+              showCategory: data.favoritesVisible,
             ),
         ],
       ),

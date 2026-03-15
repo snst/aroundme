@@ -1,37 +1,6 @@
 // Copyright 2026 Stefan Schmidt
-import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-enum SearchMode {
-  search,
-  favorite,
-  both
-}
-
-IconData placeSelectionToIcon(SearchMode placeSelection) {
-  switch (placeSelection) {
-    case SearchMode.search:
-      return Icons.search;
-    case SearchMode.favorite:
-      return Icons.favorite_border_sharp;
-    case SearchMode.both:
-      return Icons.send_and_archive_outlined;
-  }
-}
-
-SearchMode nextSearchMode(SearchMode placeSelection) {
-  switch (placeSelection) {
-    case SearchMode.search:
-      return SearchMode.favorite;
-    case SearchMode.favorite:
-      return SearchMode.search;
-    case SearchMode.both:
-      return SearchMode.search;
-  }
-}
-
-
 
 class Settings {
   static Future<String> getApiKey() async {
