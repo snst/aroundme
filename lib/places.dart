@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart'; // You'll need this package
 
-
 // Helper to launch URLs
 Future<void> launchURL(String url) async {
   if (url.isEmpty) return;
@@ -13,7 +12,6 @@ Future<void> launchURL(String url) async {
     throw Exception('Could not launch $url');
   }
 }
-
 
 class Place {
   Place({
@@ -74,9 +72,7 @@ class Place {
     return place;
   }
 
-
-  bool containsText(String text)
-  {
+  bool containsText(String text) {
     return name.toLowerCase().contains(text.toLowerCase()) || category.toLowerCase().contains(text.toLowerCase());
   }
 
@@ -123,8 +119,7 @@ class Places {
     return (val - minUserRatingCnt) / (maxUserRatingCnt - minUserRatingCnt);
   }
 
-  void updateMinMaxValues()
-  {
+  void updateMinMaxValues() {
     maxUserRatingCnt = 0;
     maxRating = 0;
     for (final place in places.values) {
@@ -191,7 +186,6 @@ class Places {
     String jsonString = jsonEncode(jsonList);
     return jsonString;
   }
-
 
   void fromJson(String jsonString) {
     clear();

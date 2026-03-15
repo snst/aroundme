@@ -30,10 +30,7 @@ class TextMarkerPainter extends CustomPainter {
     )..layout(maxWidth: size.width);
 
     // 3. Center the text in the box
-    final offset = Offset(
-      (size.width - textPainter.width) / 2,
-      (size.height - textPainter.height) / 2,
-    );
+    final offset = Offset((size.width - textPainter.width) / 2, (size.height - textPainter.height) / 2);
     textPainter.paint(canvas, offset);
   }
 
@@ -49,13 +46,11 @@ Future<BitmapDescriptor> createCustomMarkerBitmap(String title, Color bgcolor) a
   final painter = TextMarkerPainter(title, bgcolor);
   painter.paint(canvas, size);
 
-  final ui.Image image = await pictureRecorder.endRecording().toImage(
-    size.width.toInt(),
-    size.height.toInt(),
-  );
+  final ui.Image image = await pictureRecorder.endRecording().toImage(size.width.toInt(), size.height.toInt());
 
   final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
   final Uint8List bytes = byteData!.buffer.asUint8List();
 
+  // ignore: deprecated_member_use
   return BitmapDescriptor.fromBytes(bytes);
 }

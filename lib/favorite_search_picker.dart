@@ -1,6 +1,8 @@
 // Copyright 2026 Stefan Schmidt
 import 'package:flutter/material.dart';
 
+import 'app_utils.dart';
+
 class FavItem {
   final List<String> search;
   final IconData icon;
@@ -38,22 +40,21 @@ final List<FavItem> favorites = [
   FavItem(search: ['pharmacy'], icon: Icons.medication, title: 'Apotheke'),
 ];
 
-
 class FavoriteSearchPicker extends StatefulWidget {
-  const FavoriteSearchPicker({super.key, required this.onSelected});
+  const FavoriteSearchPicker({super.key, required this.onSelected, required this.isActive});
   final Function(List<String>) onSelected;
+  final bool isActive;
 
   @override
   State<FavoriteSearchPicker> createState() => _FavoriteSearchPickerState();
 }
 
 class _FavoriteSearchPickerState extends State<FavoriteSearchPicker> {
-  late Icon buttonIcon;
+  IconData buttonIcon = Icons.stars_rounded;
 
   @override
   void initState() {
     super.initState();
-    setIcon(Icons.stars_rounded, false);
     favorites.sort((a, b) => a.title.compareTo(b.title));
   }
 
@@ -66,7 +67,7 @@ class _FavoriteSearchPickerState extends State<FavoriteSearchPicker> {
           children: favorites.map((entry) {
             return SimpleDialogOption(
               onPressed: () {
-                setIcon(entry.icon, false);
+                buttonIcon = entry.icon;
                 widget.onSelected(entry.search);
                 Navigator.pop(context);
               },
@@ -84,14 +85,10 @@ class _FavoriteSearchPickerState extends State<FavoriteSearchPicker> {
     );
   }
 
-  void setIcon(IconData icon, bool selected) {
-    buttonIcon = Icon(icon, color: selected ? Theme.of(context).primaryColor : null, size: 38);
-  }
-
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: buttonIcon,
+      icon: Icon(buttonIcon, color: getIconColor(widget.isActive), size: 38),
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(),
       tooltip: 'Search Favorites',

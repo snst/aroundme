@@ -5,11 +5,10 @@ import 'package:aroundme/places.dart';
 import 'package:aroundme/result_filter.dart';
 import 'package:aroundme/settings.dart';
 
-class AppData
-{
+class AppData {
   ResultFilter resultFilter = ResultFilter();
   Places _foundPlaces = Places();
-  Places _favoritePlaces = Places();
+  final Places _favoritePlaces = Places();
   Places _filteredPlaces = Places();
   late Places _placesToShow = _foundPlaces;
   String _favoriteFile = "";
@@ -20,8 +19,7 @@ class AppData
   String get favoriteFile => _favoriteFile;
   Places get filteredPlaces => _filteredPlaces;
 
-  Future<void> init()
-  async {
+  Future<void> init() async {
     _favoriteFile = await Settings.getFavoriteFile();
     loadFavorites(_favoriteFile);
   }
@@ -33,7 +31,8 @@ class AppData
       _placesToShow = _favoritePlaces;
       filterAndShowResults();
     } else {
-      showLastSearchResults();
+      _placesToShow = _foundPlaces;
+      filterAndShowResults();
     }
   }
 
@@ -44,7 +43,7 @@ class AppData
     }
   }
 
-  void loadFavorites(String fullPath) async {
+  Future<void> loadFavorites(String fullPath) async {
     updateFavoriteFilename(fullPath);
     if (_favoriteFile != "") {
       File file = File(_favoriteFile);
@@ -63,9 +62,9 @@ class AppData
   }
 
   void saveNewFavorites(String fullPath) {
-      saveFavoritesIfChanged();
-      _favoritePlaces.clear();
-      saveFavoritesAs(fullPath);
+    saveFavoritesIfChanged();
+    _favoritePlaces.clear();
+    saveFavoritesAs(fullPath);
   }
 
   void saveFavoritesAs(String fullPath) async {
@@ -73,8 +72,7 @@ class AppData
     saveFavorites();
   }
 
-  void saveFavoritesIfChanged()
-  {
+  void saveFavoritesIfChanged() {
     if (_favoritePlaces.isDirty) {
       saveFavorites();
     }
@@ -95,13 +93,9 @@ class AppData
     filterAndShowResults();
   }
 
-  void showLastSearchResults() {
-    _placesToShow = _foundPlaces;
-    filterAndShowResults();
-  }
-
   void clear() {
     resultFilter.clear();
+    _foundPlaces.clear();
     _filteredPlaces.clear();
   }
 
@@ -114,8 +108,8 @@ class AppData
     _foundPlaces = places;
     _placesToShow = places;
 
-    for(var place in places.places.values) {
-      if(_favoritePlaces.contains(place.id)) {
+    for (var place in places.places.values) {
+      if (_favoritePlaces.contains(place.id)) {
         place.isFavorite = true;
       }
     }
@@ -129,7 +123,8 @@ class AppData
 
   void resultFilterCnt() => resultFilter.cntVisible(_placesToShow);
 
-  double resultFilterGetSliderValueRating() => resultFilter.adjustedRating(_placesToShow.minRating, _placesToShow.maxRating);
+  double resultFilterGetSliderValueRating() =>
+      resultFilter.adjustedRating(_placesToShow.minRating, _placesToShow.maxRating);
   double resultFilterGetSliderValueMinRating() => _placesToShow.minRating;
   double resultFilterGetSliderValueMaxRating() => _placesToShow.maxRating;
   void resultFilterSetRating(double value) {
@@ -137,7 +132,8 @@ class AppData
     resultFilterCnt();
   }
 
-  double resultFilterGetSliderValueRatingCnt() => resultFilter.adjustedRatingCnt(_placesToShow.minUserRatingCnt, _placesToShow.maxUserRatingCnt).toDouble();
+  double resultFilterGetSliderValueRatingCnt() =>
+      resultFilter.adjustedRatingCnt(_placesToShow.minUserRatingCnt, _placesToShow.maxUserRatingCnt).toDouble();
   double resultFilterGetSliderValueMinRatingCnt() => _placesToShow.minUserRatingCnt.toDouble();
   double resultFilterGetSliderValueMaxRatingCnt() => _placesToShow.maxUserRatingCnt.toDouble();
   void resultFilterSetRatingCnt(double value) {

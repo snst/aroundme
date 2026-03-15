@@ -28,6 +28,7 @@ class FavoriteFileDialog extends StatelessWidget {
   static Future<String?> enterNewFileName(BuildContext context) async {
     final dir = await getExternalStorageDirectory();
     if (dir == null) return null;
+    if (!context.mounted) return null;
 
     // Ask for filename
     String? fileName = await showDialog<String>(
@@ -57,20 +58,22 @@ class FavoriteFileDialog extends StatelessWidget {
 
     // Overwrite confirmation
     if (await file.exists()) {
-      final overwrite = await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) {
-          return AlertDialog(
-            title: Text('File already exists'),
-            content: Text('File "$fileName" already exists. Overwrite?'),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(context, false), child: Text('No')),
-              TextButton(onPressed: () => Navigator.pop(context, true), child: Text('Yes')),
-            ],
-          );
-        },
-      ) ??
+      if (!context.mounted) return null;
+      final overwrite =
+          await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) {
+              return AlertDialog(
+                title: Text('File already exists'),
+                content: Text('File "$fileName" already exists. Overwrite?'),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(context, false), child: Text('No')),
+                  TextButton(onPressed: () => Navigator.pop(context, true), child: Text('Yes')),
+                ],
+              );
+            },
+          ) ??
           false;
 
       if (!overwrite) return null;

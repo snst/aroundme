@@ -13,7 +13,7 @@ void showPlacePopup(BuildContext context, Place place, Function onToggleFavorite
           return AlertDialog(
             title: Text(place.name, style: const TextStyle(fontWeight: FontWeight.bold)),
             content: Column(
-              mainAxisSize: MainAxisSize.min, //crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 // Rating Row
                 Row(
@@ -40,8 +40,9 @@ void showPlacePopup(BuildContext context, Place place, Function onToggleFavorite
                       icon: Icons.copy,
                       label: "Coordinates",
                       onTap: () {
-                        Clipboard.setData(ClipboardData(
-                            text: "${place.location.latitude}, ${place.location.longitude}"));
+                        Clipboard.setData(
+                          ClipboardData(text: "${place.location.latitude}, ${place.location.longitude}"),
+                        );
                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Location copied!")));
                       },
                     ),
@@ -58,8 +59,8 @@ void showPlacePopup(BuildContext context, Place place, Function onToggleFavorite
               ],
             ),
           );
-        }
-        );
+        },
+      );
     },
   );
 }

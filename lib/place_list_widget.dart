@@ -72,15 +72,6 @@ class _PlaceListWidgetState extends State<PlaceListWidget> {
                               });
                             },
                     ),
-                    /*
-                    IconButton(
-                      icon: const Icon(Icons.info),
-                      onPressed: _selectedPlace == null
-                          ? null
-                          : () {
-                              launchURL(_selectedPlace!.gmPlace);
-                            },
-                    ),*/
                     SizedBox(width: 20),
                     IconButton(
                       icon: const Icon(Icons.rate_review),
@@ -114,8 +105,10 @@ class _PlaceListWidgetState extends State<PlaceListWidget> {
                         title: Text(place.name),
                         subtitle: Row(
                           children: [
-                            Text('${place.rating} (${place.userRatingCnt})' + (widget.showCategory ? '   ${place.category}' : '') + '  '),
-                            if (place.isFavorite) const Icon(Icons.heart_broken, color: Colors.red)
+                            Text(
+                              '${place.rating} (${place.userRatingCnt})${widget.showCategory ? '   ${place.category}  ' : ''}',
+                            ),
+                            if (place.isFavorite) const Icon(Icons.heart_broken, color: Colors.red),
                           ],
                         ),
                         selected: _selectedPlace == place,
@@ -124,40 +117,12 @@ class _PlaceListWidgetState extends State<PlaceListWidget> {
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            /*
-                            IconButton(
-                              icon: const Icon(Icons.heart_broken),
-                              color: place.isFavorite ? Colors.red : null,
-                              onPressed: () {
-                                setState(() {
-                                  widget.onToggleFavorite(place);
-                                });
-                              },
-                            ),*/
-                            /*
-                            IconButton(
-                              icon: const Icon(Icons.details),
-                              onPressed: () {
-                                //launchURL(place.gmPlace);
-                                widget._mapController?.animateCamera(CameraUpdate.newLatLng(place.location));
-                                widget._mapController?.showMarkerInfoWindow(MarkerId(place.id));
-                                showPlacePopup(context, place, widget.onToggleFavorite);
-                              },
-                            ),*/
-
                             IconButton(
                               icon: const Icon(Icons.info),
                               onPressed: () {
                                 launchURL(place.gmPlace);
                               },
-                            )
-                        /*
-                            IconButton(
-                              icon: const Icon(Icons.star),
-                              onPressed: () {
-                                launchURL(place.gmReviews);
-                              },
-                            ),*/
+                            ),
                           ],
                         ),
                         onTap: () {

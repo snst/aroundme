@@ -3,7 +3,7 @@ import 'package:aroundme/settings.dart';
 import 'package:flutter/material.dart';
 
 class SettingsScreen extends StatefulWidget {
-  SettingsScreen({super.key});
+  const SettingsScreen({super.key});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -27,12 +27,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
-  Future<void> _saveApiKey() async {
+  Future<void> _saveApiKey(BuildContext context) async {
     _apiKey = _apiKeyController.text;
     await Settings.setApiKey(_apiKey!);
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('API Key Saved!')));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('API Key Saved!')));
+    }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +51,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'Enter your API key'),
             ),
             const SizedBox(height: 16),
-            ElevatedButton(onPressed: _saveApiKey, child: const Text('Save')),
+            ElevatedButton(
+              onPressed: () {
+                _saveApiKey(context);
+              },
+              child: const Text('Save'),
+            ),
           ],
         ),
       ),

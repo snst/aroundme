@@ -35,5 +35,4 @@ class Settings {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('favorite_file', fullPath);
   }
-
 }

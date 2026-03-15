@@ -109,8 +109,8 @@ class MapSearch {
     }
 
     final Uri uri = Uri.parse('https://places.googleapis.com/v1/places:searchText');
-//    final String mask =
-//        'places.displayName,places.rating,places.userRatingCount,nextPageToken,places.location,places.googleMapsUri,places.googleMapsLinks,places.id,places.attributions,places.movedPlace';
+    //    final String mask =
+    //        'places.displayName,places.rating,places.userRatingCount,nextPageToken,places.location,places.googleMapsUri,places.googleMapsLinks,places.id,places.attributions,places.movedPlace';
     final String mask =
         'places.displayName,places.rating,places.userRatingCount,nextPageToken,places.location,places.googleMapsLinks,places.id';
     final Map<String, dynamic> body = {

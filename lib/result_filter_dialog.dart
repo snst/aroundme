@@ -24,7 +24,7 @@ void showFilterDialog(BuildContext context, AppData data) {
                   min: data.resultFilterGetSliderValueMinRating(),
                   max: data.resultFilterGetSliderValueMaxRating(),
                   onChanged: (value) {
-                    setDialogState(() => data.resultFilterSetRating(value) );
+                    setDialogState(() => data.resultFilterSetRating(value));
                   },
                 ),
                 const SizedBox(height: 20),
@@ -37,26 +37,24 @@ void showFilterDialog(BuildContext context, AppData data) {
                   min: data.resultFilterGetSliderValueMinRatingCnt(),
                   max: data.resultFilterGetSliderValueMaxRatingCnt(),
                   onChanged: (value) {
-                    setDialogState(() => data.resultFilterSetRatingCnt(value) );
+                    setDialogState(() => data.resultFilterSetRatingCnt(value));
                   },
                 ),
               ],
             ),
             actions: [
               // TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-              ElevatedButton(
+              TextButton(
                 onPressed: () {
                   setDialogState(() async {
                     data.resultFilterClearMinValues();
                     data.filterAndShowResults();
                     Navigator.pop(context);
-                    }
-                    );
+                  });
                 },
                 child: const Text("Clear"),
               ),
-
-              ElevatedButton(
+              TextButton(
                 onPressed: () async {
                   data.filterAndShowResults();
                   Navigator.pop(context);

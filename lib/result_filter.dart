@@ -1,10 +1,7 @@
 // Copyright 2026 Stefan Schmidt
 import 'package:aroundme/places.dart';
 
-enum SortPlaces {
-  rating,
-  ratingCnt,
-}
+enum SortPlaces { rating, ratingCnt }
 
 class ResultFilter {
   double rating = 0;
@@ -16,8 +13,7 @@ class ResultFilter {
   int all = 0;
   SortPlaces sortBy = SortPlaces.ratingCnt;
 
-  void clear()
-  {
+  void clear() {
     rating = 0;
     ratingCnt = 0;
   }

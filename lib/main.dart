@@ -14,6 +14,7 @@ import 'package:google_map_dynamic_key/google_map_dynamic_key.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import 'app_utils.dart';
 import 'favorite_file_dialog.dart';
 
 void main() async {
@@ -66,7 +67,7 @@ class _AroundMePageState extends State<AroundMePage> {
   void initState() {
     super.initState();
     _listener = AppLifecycleListener(onStateChange: _handleStateChange);
-    data.onUpdateMarkers = updateMarkers2;
+    data.onUpdateMarkers = updateMarkers;
     mapSearch = MapSearch(widget._apiKey, onSearchFinished);
     _init();
   }
@@ -116,10 +117,10 @@ class _AroundMePageState extends State<AroundMePage> {
     );
   }
 
-  Future<Set<Marker>> _buildMarkers(Places places) async {
+  Future<Set<Marker>> _buildMarkers(Places places, bool markFavorites) async {
     final newMarkers = <Marker>{};
     for (final place in places.places.values) {
-      Color color = place.isFavorite
+      Color color = place.isFavorite && markFavorites
           ? Colors.green
           : Color.lerp(Colors.blue, Colors.red, places.normRatingCnt(place.userRatingCnt))!;
       final icon = await createCustomMarkerBitmap("${place.rating}", color);
@@ -143,11 +144,11 @@ class _AroundMePageState extends State<AroundMePage> {
 
   void clearResults() {
     setState(() {
-      data.showFavorites(false);
-      mapSearch.clearResults();
-      mapSearch.clearNextPageToken();
       markers.clear();
       data.clear();
+      mapSearch.clearResults();
+      mapSearch.clearNextPageToken();
+      data.showFavorites(false);
     });
   }
 
@@ -158,16 +159,8 @@ class _AroundMePageState extends State<AroundMePage> {
     }
   }
 
-  void updateMarkers() async {
-    final newMarkers = await _buildMarkers(data.filteredPlaces);
-    if (!mounted) return;
-    setState(() {
-      markers = newMarkers;
-    });
-  }
-
-  void updateMarkers2(Places places) async {
-    final newMarkers = await _buildMarkers(places);
+  void updateMarkers(Places places) async {
+    final newMarkers = await _buildMarkers(places, !data.favoritesVisible);
     if (!mounted) return;
     setState(() {
       markers = newMarkers;
@@ -176,7 +169,6 @@ class _AroundMePageState extends State<AroundMePage> {
 
   void onSearchFinished(Places places, bool hasMore) async {
     data.onSearchFinished(places);
-    //updateMarkers();
     if (!hasMore) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -222,14 +214,10 @@ class _AroundMePageState extends State<AroundMePage> {
     }
   }
 
-  void loadFavorites(String fullPath, {bool show = true}) {
-    try {
-      data.saveFavoritesIfChanged();
-      data.loadFavorites(fullPath);
-      data.showFavorites(show);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
-    }
+  void loadFavorites(String fullPath, {bool show = true}) async {
+    data.saveFavoritesIfChanged();
+    await data.loadFavorites(fullPath);
+    data.showFavorites(show);
   }
 
   void onSearchTextEntered(String text) {
@@ -243,7 +231,7 @@ class _AroundMePageState extends State<AroundMePage> {
 
   @override
   Widget build(BuildContext context) {
-    final Color iconColor = Colors.black.withOpacity(0.6);
+    final Color iconColor = Colors.black.withValues(alpha: 0.6);
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: Stack(
@@ -273,29 +261,15 @@ class _AroundMePageState extends State<AroundMePage> {
                 Row(
                   children: [
                     const SizedBox(width: 50),
-                    IconButton(
-                      icon: Icon(Icons.favorite_border_sharp, size: 38, color: (data.favoritesVisible ? Colors.red.withOpacity(0.6) : iconColor)),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () {
-                        setState(() {
-                          data.showFavorites(!data.favoritesVisible);
-                        });
-                      },
-                      onLongPress: () {
-                        _showfavoriteFileDialog(context);
-                      }
-                    ),
-
                     Expanded(
                       child: TextField(
                         decoration: InputDecoration(
                           hintText: 'Search...',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                           filled: true,
                           fillColor: Colors.grey[100],
                           isDense: true,
-                          contentPadding: const EdgeInsets.all(8.0),
+                          contentPadding: const EdgeInsets.all(6.0),
                           suffixIcon: _searchController.text.isEmpty
                               ? null
                               : IconButton(
@@ -311,39 +285,57 @@ class _AroundMePageState extends State<AroundMePage> {
                         },
                       ),
                     ),
+                    const SizedBox(width: 10),
+                    TextButton(
+                      onPressed: () => showFilterDialog(context, data),
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.white.withAlpha(230), // Light blue background
+                        foregroundColor: Colors.black, // Text color
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: const BorderSide(width: 1),
+                        ),
+                      ),
+                      child: Text("${markers.length} / ${data.resultFilter.all}"),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
-                TextButton(
-                  onPressed: () => showFilterDialog(context, data),
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.white.withAlpha(230), // Light blue background
-                    foregroundColor: Colors.black, // Text color
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      side: const BorderSide(width: 1),
+                IconButton(
+                  icon: Icon(Icons.favorite_outlined, size: 38, color: getIconColor(data.favoritesVisible)),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () {
+                    setState(() {
+                      data.showFavorites(!data.favoritesVisible);
+                    });
+                  },
+                  onLongPress: () {
+                    _showfavoriteFileDialog(context);
+                  },
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.delete, size: 38, color: iconColor),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () {
+                        clearResults();
+                      },
                     ),
-                  ),
-                  child: Text("${markers.length} / ${data.resultFilter.all}"),
-                ),
-                const SizedBox(height: 10),
-                IconButton(
-                  icon: Icon(Icons.delete, size: 38, color: iconColor),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  onPressed: () {
-                    clearResults();
-                  },
-                ),
-                const SizedBox(height: 10),
-                IconButton(
-                  icon: Icon(Icons.add_circle, size: 38, color: iconColor),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  onPressed: () {
-                    data.showFavorites(false);
-                    mapSearch.searchNext();
-                  },
+                    IconButton(
+                      icon: Icon(Icons.add_circle, size: 38, color: iconColor),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () {
+                        data.showFavorites(false);
+                        mapSearch.searchNext();
+                      },
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 10),
                 FavoriteSearchPicker(
@@ -352,10 +344,11 @@ class _AroundMePageState extends State<AroundMePage> {
                     clearResults();
                     mapSearch.searchNearby(value);
                   },
+                  isActive: mapSearch.lastSearchType == SearchType.nearby && !data.favoritesVisible,
                 ),
                 const SizedBox(height: 10),
                 IconButton(
-                  icon: Icon(Icons.list, size: 38, color: iconColor),
+                  icon: Icon(Icons.list, size: 38, color: getIconColor(_isPlacesListVisible)),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   onPressed: togglePlacesList,
@@ -372,13 +365,7 @@ class _AroundMePageState extends State<AroundMePage> {
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SettingsScreen(
-                    ),
-                  ),
-                );
+                Navigator.push(context, MaterialPageRoute(builder: (context) => SettingsScreen()));
               },
             ),
           ),
