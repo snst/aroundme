@@ -14,6 +14,8 @@ import 'package:google_map_dynamic_key/google_map_dynamic_key.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import 'favorite_file_dialog.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final String apiKey = await Settings.getApiKey();
@@ -98,6 +100,20 @@ class _AroundMePageState extends State<AroundMePage> {
     if (status.isDenied) {
       // Handle the case where the user denies the permission.
     }
+  }
+
+  void _showfavoriteFileDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return FavoriteFileDialog(
+          title: data.favoriteFile.split('/').last,
+          onFileSelected: (path) => loadFavorites(path),
+          onNew: (path) => saveNewFavorites(path),
+          onSaveAs: (path) => saveFavorites(path),
+        );
+      },
+    );
   }
 
   Future<Set<Marker>> _buildMarkers(Places places) async {
@@ -266,7 +282,9 @@ class _AroundMePageState extends State<AroundMePage> {
                           data.showFavorites(!data.favoritesVisible);
                         });
                       },
-                      //onLongPress: () => _showFavoritesDialog,
+                      onLongPress: () {
+                        _showfavoriteFileDialog(context);
+                      }
                     ),
 
                     Expanded(
@@ -358,10 +376,6 @@ class _AroundMePageState extends State<AroundMePage> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => SettingsScreen(
-                      favoriteFile: data.favoriteFile,
-                      onSaveFavorites: saveFavorites,
-                      onSaveNewFavorites: saveNewFavorites,
-                      onLoadFavorites: loadFavorites,
                     ),
                   ),
                 );
