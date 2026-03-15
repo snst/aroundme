@@ -5,18 +5,23 @@ import 'package:flutter/material.dart';
 import 'favorites_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key, required this.onSaveFavorites, required this.onLoadFavorites});
+  SettingsScreen({super.key, required this.favoriteFile,
+    required this.onSaveFavorites,
+    required this.onSaveNewFavorites,
+    required this.onLoadFavorites
+  });
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
+  String favoriteFile;
   final Function onSaveFavorites;
+  final Function onSaveNewFavorites;
   final Function onLoadFavorites;
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController _apiKeyController;
   String? _apiKey;
-  String? _favoriteFile;
 
   @override
   void initState() {
@@ -27,7 +32,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadsettings() async {
     _apiKey = await Settings.getApiKey();
-    _favoriteFile = await Settings.getFavoriteFile();
     setState(() {
       _apiKeyController.text = _apiKey ?? '';
     });
@@ -39,67 +43,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('API Key Saved!')));
   }
 
-  Future<void> loadFavorites(BuildContext context) async {
-    String? filename = await FavoritesDialog.loadFavorites(context);
+  void loadFavorites(BuildContext context) async {
+    String? filename = await FavoritesDialog.showDlgLoadFavorites(context);
     if (filename != null) {
-      setState(() {
-        _favoriteFile = filename;
-      });
-      widget.onLoadFavorites(fullPath: filename);
+      widget.onLoadFavorites(filename);
     }
   }
 
   Future<void> saveFavorites(BuildContext context) async {
-    widget.onSaveFavorites(_favoriteFile);
+    widget.onSaveFavorites(widget.favoriteFile);
   }
 
   Future<void> saveFavoritesAs(BuildContext context) async {
-    String? filename = await FavoritesDialog.saveFavoritesAs(context);
-    if (filename != null) {
-      setState(() {
-        _favoriteFile = filename;
-      });
-      widget.onSaveFavorites(filename);
-    }
+    String? filename = await FavoritesDialog.showDlgSaveFavoritesAs(context);
+    widget.onSaveFavorites(filename);
   }
 
-  /*
-    Future<void> saveSettingsAndFile(BuildContext context) async {
-
-      String? directoryPath = await FilePicker.platform.getDirectoryPath();
-
-      if (directoryPath == null) {
-        return;
-      }
-
-        String? fileName = await showDialog<String>(
-          context: context,
-          builder: (context) {
-            TextEditingController _controller = TextEditingController(text: "");
-            return AlertDialog(
-              title: Text("Enter Filename"),
-              content: TextField(controller: _controller, decoration: InputDecoration(suffixText: ".json")),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: Text("Cancel")),
-                ElevatedButton(onPressed: () => Navigator.pop(context, _controller.text), child: Text("Save")),
-              ],
-            );
-          }
-      );
-
-      if (fileName == null || fileName.isEmpty) return;
-
-      String fullPath = "$directoryPath/$fileName.json";
-      if(!fullPath.endsWith('.json')) {
-        fullPath += '.json';
-      }
-      setState(() {
-        _favoriteFileController.text = fullPath;
-      });
-      Settings.setFavoriteFile(fullPath);
-      widget.onSaveFavorites(fullPath);
-    }
-    */
+  Future<void> saveNewFavoritesAs(BuildContext context) async {
+    String? filename = await FavoritesDialog.showDlgSaveFavoritesAs(context);
+    widget.onSaveNewFavorites(filename);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -121,27 +84,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             const Text('Favorites File', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Text(_favoriteFile ?? ""),
+            Text(widget.favoriteFile ?? ""),
             const SizedBox(height: 16),
             Row(
               children: [
                 ElevatedButton(
                   onPressed: () {
                     loadFavorites(context);
+                    Navigator.pop(context);
                   },
                   child: const Text('Load'),
                 ),
-                SizedBox(width: 10),
+                SizedBox(width: 5),
+                ElevatedButton(
+                  onPressed: () {
+                    saveNewFavoritesAs(context);
+                    Navigator.pop(context);
+                  },
+                  child: const Text('New'),
+                ),
+                SizedBox(width: 5),
                 ElevatedButton(
                   onPressed: () {
                     saveFavorites(context);
+                    Navigator.pop(context);
                   },
                   child: const Text('Save'),
                 ),
-                SizedBox(width: 10),
+                SizedBox(width: 5),
                 ElevatedButton(
                   onPressed: () {
                     saveFavoritesAs(context);
+                    Navigator.pop(context);
                   },
                   child: const Text('Save As'),
                 ),

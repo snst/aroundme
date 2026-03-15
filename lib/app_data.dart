@@ -15,38 +15,75 @@ class AppData
 
   late Places placesToShow = foundPlaces;
   SearchMode searchMode = SearchMode.search;
+  String favoriteFile = "";
 
+  Future<void> init()
+  async {
+    favoriteFile = await Settings.getFavoriteFile();
+    loadFavorites(favoriteFile);
+  }
 
   void setSearchMode(SearchMode searchMode) {
     this.searchMode = searchMode;
     if (searchMode == SearchMode.favorite) {
-      loadFavorites(null);
+      showFavorites();
     }
     else if (searchMode == SearchMode.search) {
       showLastSearchResults();
     }
   }
 
-  void loadFavorites(String? fullPath) async {
-    if (fullPath != null) {
-      favoritePlaces.clear();
-      Settings.setFavoriteFile(fullPath);
-    }
-
-    if (favoritePlaces.isEmpty()) {
-      String fullPath = await Settings.getFavoriteFile();
-      File file = File(fullPath);
-      String jsonString = await file.readAsString();
-      favoritePlaces.fromJson(jsonString);
-    }
+  void showFavorites() {
     favoritePlaces.updateMinMaxValues();
     placesToShow = favoritePlaces;
     filterAndShowResults();
   }
 
-  void saveFavoritesAs(String fullPath) async {
-    String jsonString = favoritePlaces.toJson();
-    File(fullPath).writeAsStringSync(jsonString);
+  void updateFavoriteFilename(String? fullPath) {
+    if (fullPath != null && favoriteFile != fullPath) {
+      favoriteFile = fullPath;
+      Settings.setFavoriteFile(favoriteFile);
+    }
+  }
+
+  void clearFavorites()
+  {
+    favoritePlaces.clear();
+    updateShownFavoritesIfVisible();
+  }
+
+  void loadFavorites(String? fullPath) async {
+    updateFavoriteFilename(fullPath);
+    if (favoriteFile != "") {
+      File file = File(favoriteFile);
+      String jsonString = await file.readAsString();
+      favoritePlaces.fromJson(jsonString);
+      favoritePlaces.isDirty = false;
+    }
+    updateShownFavoritesIfVisible();
+  }
+
+  void saveFavorites(String? fullPath) async {
+    updateFavoriteFilename(fullPath);
+    if (favoriteFile != "") {
+      String jsonString = favoritePlaces.toJson();
+      File(favoriteFile).writeAsStringSync(jsonString);
+      favoritePlaces.isDirty = false;
+    }
+  }
+
+  void saveFavoritesIfChanged()
+  {
+    if (favoritePlaces.isDirty) {
+      saveFavorites(null);
+    }
+  }
+
+  void updateShownFavoritesIfVisible()
+  {
+    if (searchMode == SearchMode.favorite) {
+      showFavorites();
+    }
   }
 
   void showLastSearchResults() {
@@ -75,17 +112,10 @@ class AppData
     }
     filterAndShowResults();
   }
-/*
-  void onShowFavorites(Places places) {
-    placesToShow = places;
-    filterAndShowResults();
-  }*/
-
 
   void filterAndShowResults() {
     filteredPlaces = resultFilter.filter(placesToShow);
     onUpdateMarkers(filteredPlaces);
-
   }
 
   void resultFilterCnt() => resultFilter.cntVisible(placesToShow);

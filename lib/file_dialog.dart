@@ -22,7 +22,7 @@ class FileHelper {
           content: TextField(
             autofocus: true,
             onChanged: (value) => name = value,
-            decoration: InputDecoration(hintText: "example.txt"),
+            decoration: InputDecoration(hintText: "filename"),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context, null), child: Text('Cancel')),

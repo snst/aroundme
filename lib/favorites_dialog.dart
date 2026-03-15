@@ -4,19 +4,13 @@ import 'package:flutter/cupertino.dart';
 import 'file_dialog.dart';
 
 class FavoritesDialog {
-  static Future<String?> loadFavorites(BuildContext context) async {
+  static Future<String?> showDlgLoadFavorites(BuildContext context) async {
     String? filename = await FileHelper.pickFileFromAppFolder(context);
-    if (filename != null) {
-      Settings.setFavoriteFile(filename);
-    }
     return filename;
   }
 
-  static Future<String?> saveFavoritesAs(BuildContext context) async {
+  static Future<String?> showDlgSaveFavoritesAs(BuildContext context) async {
     String? filename = await FileHelper.createNewFile(context);
-    if (filename != null) {
-      Settings.setFavoriteFile(filename);
-    }
     return filename;
   }
 }

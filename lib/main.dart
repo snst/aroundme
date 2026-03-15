@@ -59,22 +59,42 @@ class _AroundMePageState extends State<AroundMePage> {
   EdgeInsets _mapPadding = const EdgeInsets.only(top: 400);
   bool _isPlacesListVisible = false;
   Set<Marker> markers = {};
+  late final AppLifecycleListener _listener;
 
   @override
   void initState() {
     super.initState();
+    _listener = AppLifecycleListener(
+      onStateChange: _handleStateChange,
+    );
     data.onUpdateMarkers = updateMarkers2;
     mapSearch = MapSearch(widget._apiKey, onSearchFinished);
     _init();
   }
 
+  @override
+  void dispose() {
+    _listener.dispose(); // Always clean up your listeners!
+    super.dispose();
+  }
+
   Future<void> _init() async {
     await _requestLocationPermission();
     final center = await Settings.getInitialPos();
+    data.init();
     setState(() {
       mapCenter = center;
       isMapReady = true;
     });
+  }
+
+  void _handleStateChange(AppLifecycleState state) {
+    // 'inactive' or 'hidden' are usually when the app starts minimizing
+    // 'paused' is when it is fully in the background
+    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+      data.saveFavoritesIfChanged();
+
+    }
   }
 
   Future<void> _requestLocationPermission() async {
@@ -111,6 +131,7 @@ class _AroundMePageState extends State<AroundMePage> {
 
   void clearResults() {
     setState(() {
+      data.setSearchMode(SearchMode.search);
       mapSearch.clearResults();
       mapSearch.clearNextPageToken();
       markers.clear();
@@ -174,50 +195,50 @@ class _AroundMePageState extends State<AroundMePage> {
     } else {
       data.favoritePlaces.remove(place.id);
     }
-
-    //updateMarkers();
   }
 
-  /*
-  void _saveFavoritesAsWithDialog({String? fullPath}) async {
-    if (fullPath == null || fullPath.isEmpty) {
-      fullPath = await Settings.getFavoriteFile();
-      if (!await fileExists(fullPath)) {
-        fullPath = await FileHelper.createNewFile(context);
-      }
-
-      if (fullPath == null) return;
-    }
-    _saveFavoritesAs(fullPath);
-  }*/
-
-  void saveFavoritesAs(String? fullPath) {
+  void saveNewFavorites(String? fullPath) {
     try {
-      if (fullPath == null) {
-        throw Exception("No file path provided");
+      if (fullPath != null) {
+        data.saveFavoritesIfChanged();
+        data.clearFavorites();
+        data.saveFavorites(fullPath);
       }
-      data.saveFavoritesAs(fullPath);
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Saved: $fullPath"), backgroundColor: Colors.green));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
     }
   }
 
-  void _showFavoritesDialog() async {}
+  void saveFavorites(String? fullPath) {
+    try {
+      if (fullPath != null) {
+        data.saveFavorites(fullPath);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
+    }
+  }
 
+  void loadFavorites(String? fullPath) {
+    try {
+      data.saveFavoritesIfChanged();
+      data.setSearchMode(SearchMode.favorite);
+      data.loadFavorites(fullPath);
 
+      //ScaffoldMessenger.of(
+      //  context,
+      //).showSnackBar(SnackBar(content: Text("Loaded: $fullPath"), backgroundColor: Colors.green));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
+    }
+
+  }
 
   void onSearchTextEntered(String text) {
     clearResults();
     if (data.searchMode == SearchMode.favorite) {
-      //data.searchInFavorites(text);
-      //loadFavorites(clear: false);
       data.placesToShow = data.favoritePlaces.filterByText(text);
       data.filterAndShowResults();
-      //updateMarkers();
     }
     else if (data.searchMode == SearchMode.search) {
       mapSearch.searchText(text);
@@ -268,7 +289,7 @@ class _AroundMePageState extends State<AroundMePage> {
                           data.setSearchMode(nextSearchMode(data.searchMode));
                         });
                       },
-                      onLongPress: () => _showFavoritesDialog,
+                      //onLongPress: () => _showFavoritesDialog,
                     ),
 
                     Expanded(
@@ -325,12 +346,14 @@ class _AroundMePageState extends State<AroundMePage> {
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   onPressed: () {
+                    data.setSearchMode(SearchMode.search);
                     mapSearch.searchNext();
                   },
                 ),
                 const SizedBox(height: 10),
                 FavoriteSearchPicker(
                   onSelected: (value) {
+                    data.setSearchMode(SearchMode.search);
                     clearResults();
                     mapSearch.searchNearby(value);
                   },
@@ -358,7 +381,11 @@ class _AroundMePageState extends State<AroundMePage> {
                   context,
                   MaterialPageRoute(
                     builder: (context) =>
-                        SettingsScreen(onSaveFavorites: saveFavoritesAs, onLoadFavorites: data.loadFavorites),
+                        SettingsScreen(
+                          favoriteFile: data.favoriteFile,
+                            onSaveFavorites: saveFavorites,
+                            onSaveNewFavorites: saveNewFavorites,
+                            onLoadFavorites: loadFavorites),
                   ),
                 );
               },

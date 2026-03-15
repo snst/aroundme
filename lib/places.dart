@@ -101,6 +101,7 @@ class Places {
   int maxUserRatingCnt = 0;
   double minRating = 0;
   double maxRating = 0;
+  bool isDirty = false;
 
   bool isEmpty() {
     return places.isEmpty;
@@ -154,6 +155,7 @@ class Places {
     //if (minRating == 0 || place.rating < minRating) {
     //  minRating = place.rating;
     //}
+    isDirty = true;
     return true;
   }
 
@@ -164,6 +166,7 @@ class Places {
     maxUserRatingCnt = 0;
     minRating = 0;
     maxRating = 0;
+    isDirty = true;
   }
 
   bool contains(String id) {
@@ -179,6 +182,7 @@ class Places {
     if (place != null) {
       places.remove(id);
       items.remove(place);
+      isDirty = true;
     }
   }
 
